@@ -1,34 +1,56 @@
 <?php
 
+namespace Tests\Feature\Auth;
+
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
+use Tests\FeatureTestCase;
 
-test('the SPA login shell is available', function () {
-    $this->get('/login')
-        ->assertOk()
-        ->assertSee('<meta name="csrf-token"', false);
-});
+class AuthenticationTest extends FeatureTestCase
+{
+    public function test_the_spa_login_shell_is_available(): void
+    {
+        $response = $this->get('/login');
 
-test('users can authenticate with Fortify', function () {
-    $user = User::factory()->create();
+        $response->assertOk();
+        $response->assertSee('<meta name="csrf-token"', false);
+    }
 
-    $this->postJson('/login', ['email' => $user->email, 'password' => 'password'])
-        ->assertOk();
+    public function test_users_can_authenticate_with_fortify(): void
+    {
+        $user = User::factory()->create();
 
-    $this->assertAuthenticatedAs($user);
-});
+        $response = $this->postJson('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
 
-test('users can logout', function () {
-    $user = User::factory()->create();
+        $response->assertOk();
+        $this->assertAuthenticatedAs($user);
+    }
 
-    $this->actingAs($user)->postJson('/logout')->assertNoContent();
-    $this->assertGuest();
-});
+    public function test_authenticated_users_can_log_out(): void
+    {
+        $user = User::factory()->create();
 
-test('login is rate limited', function () {
-    $user = User::factory()->create();
-    RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
+        $response = $this->actingAs($user)->postJson('/logout');
 
-    $this->post('/login', ['email' => $user->email, 'password' => 'wrong-password'])
-        ->assertTooManyRequests();
-});
+        $response->assertNoContent();
+        $this->assertGuest();
+    }
+
+    public function test_login_is_rate_limited(): void
+    {
+        $user = User::factory()->create();
+        $key = md5('login'.implode('|', [$user->email, '127.0.0.1']));
+
+        RateLimiter::increment($key, amount: 5);
+
+        $response = $this->postJson('/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        $response->assertTooManyRequests();
+    }
+}

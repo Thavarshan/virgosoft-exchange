@@ -1,13 +1,21 @@
 <?php
 
+namespace Tests\Feature\Broadcasting;
+
 use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
+use Tests\FeatureTestCase;
 
-test('users can only authorize their own private channel', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $authorize = Broadcast::getChannels()->get('user.{id}');
+class PrivateChannelAuthorizationTest extends FeatureTestCase
+{
+    public function test_users_can_only_authorize_their_own_private_channel(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $authorize = Broadcast::getChannels()->get('user.{id}');
 
-    expect($authorize($user, $user->id))->toBeTrue();
-    expect($authorize($user, $otherUser->id))->toBeFalse();
-});
+        $this->assertNotNull($authorize);
+        $this->assertTrue($authorize($user, $user->id));
+        $this->assertFalse($authorize($user, $otherUser->id));
+    }
+}

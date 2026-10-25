@@ -1,10 +1,19 @@
 <?php
 
+namespace Tests\Feature\Settings;
+
 use App\Models\User;
+use Tests\FeatureTestCase;
 
-test('the protected API returns a stable identity contract', function () {
-    $user = User::factory()->create();
+class SecurityTest extends FeatureTestCase
+{
+    public function test_the_protected_api_returns_a_stable_identity_contract(): void
+    {
+        $user = User::factory()->create();
 
-    $this->actingAs($user)->getJson('/api/session')
-        ->assertJsonStructure(['user' => ['id', 'name', 'email']]);
-});
+        $this->actingAs($user)
+            ->getJson('/api/session')
+            ->assertOk()
+            ->assertJsonStructure(['user' => ['id', 'name', 'email']]);
+    }
+}

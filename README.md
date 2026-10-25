@@ -4,7 +4,7 @@ Virgosoft Exchange is a Laravel 13 + Vue 3 foundation for a cryptocurrency limit
 
 ## Stack
 
-- Laravel 13.38, PHP 8.5+, Fortify, Sanctum, Pest, Pint, Larastan
+- Laravel 13.38, PHP 8.5+, Fortify, Sanctum, PHPUnit, Pint, Larastan
 - PostgreSQL 17, database-backed sessions/cache/queues
 - Vue 3, TypeScript, Vite, Tailwind CSS 4, Vue Router, Axios
 - Laravel Echo and Pusher JS, Lucide icons, Vitest, Vue Test Utils

@@ -1,16 +1,25 @@
 <?php
 
+namespace Tests\Feature\Auth;
+
 use App\Models\User;
+use Tests\FeatureTestCase;
 
-test('protected session endpoint rejects guests with JSON', function () {
-    $this->getJson('/api/session')->assertUnauthorized();
-});
+class PasswordConfirmationTest extends FeatureTestCase
+{
+    public function test_guests_cannot_access_the_session_endpoint(): void
+    {
+        $this->getJson('/api/session')->assertUnauthorized();
+    }
 
-test('authenticated session endpoint exposes only identity fields', function () {
-    $user = User::factory()->create();
+    public function test_authenticated_users_can_access_the_session_endpoint(): void
+    {
+        $user = User::factory()->create();
 
-    $this->actingAs($user)->getJson('/api/session')
-        ->assertOk()
-        ->assertJsonPath('user.id', $user->id)
-        ->assertJsonMissingPath('user.password');
-});
+        $response = $this->actingAs($user)->getJson('/api/session');
+
+        $response->assertOk()
+            ->assertJsonPath('user.id', $user->id)
+            ->assertJsonMissingPath('user.password');
+    }
+}
