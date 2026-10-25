@@ -6,6 +6,7 @@ use App\Enums\OrderSide;
 use App\Enums\OrderStatus;
 use App\Events\OrderMatched;
 use App\Models\Order;
+use App\Models\Trade;
 use App\Models\User;
 
 class MatchOrder
@@ -61,6 +62,12 @@ class MatchOrder
         $this->fillMatchedOrders->execute(
             $match->buyOrder,
             $match->sellOrder,
+        );
+        $this->recordTrade(
+            $match,
+            $executionPrice,
+            $tradeValue,
+            $commission,
         );
         $this->broadcastMatch(
             $match,
@@ -129,6 +136,34 @@ class MatchOrder
             $executionPrice,
             $amount,
         );
+    }
+
+    /**
+     * Persist the actual execution terms after both settlements succeed.
+     *
+     * The caller keeps this insert inside the existing transaction, so a
+     * later failure or outer rollback removes the execution record as well.
+     *
+     * @param  numeric-string  $executionPrice
+     * @param  numeric-string  $tradeValue
+     * @param  numeric-string  $commission
+     */
+    protected function recordTrade(
+        OrderMatch $match,
+        string $executionPrice,
+        string $tradeValue,
+        string $commission,
+    ): void {
+        Trade::query()->create([
+            'buy_order_id' => $match->buyOrder->id,
+            'sell_order_id' => $match->sellOrder->id,
+            'symbol' => $match->buyOrder->symbol,
+            // Persist the counter-order price used by settlement.
+            'price' => $executionPrice,
+            'amount' => $match->buyOrder->amount,
+            'trade_value' => $tradeValue,
+            'commission' => $commission,
+        ]);
     }
 
     /**

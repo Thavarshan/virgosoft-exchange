@@ -10,6 +10,7 @@ use App\Enums\OrderStatus;
 use App\Events\OrderMatched;
 use App\Models\Asset;
 use App\Models\Order;
+use App\Models\Trade;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
@@ -74,6 +75,7 @@ class ConcurrentOrderPlacementTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame(4, Order::query()->count());
+        $this->assertSame(2, Trade::query()->count());
         $this->assertSame(0, Order::query()->where('status', OrderStatus::OPEN)->count());
         $this->assertSame('1900.00', $seller->balance);
         $this->assertSame('0.00', $seller->locked_balance);
@@ -121,6 +123,7 @@ class ConcurrentOrderPlacementTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame(2, Order::query()->count());
+        $this->assertSame(1, Trade::query()->count());
         $this->assertSame(
             2,
             Order::query()->where('status', OrderStatus::FILLED)->count(),

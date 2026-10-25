@@ -20,13 +20,19 @@ make setup
 ./vendor/bin/sail artisan migrate --seed
 ```
 
-The local-only seed creates `test@example.com` and `demo@example.com`, both using the password `password`. The seeder exits without creating users in production.
+The local-only seed creates `demo@example.com` and
+`counterparty@example.com`, both using the password `password`. Each account
+starts with `$1000.00`, `1 BTC`, and `10 ETH`, so the trading flow can be
+demonstrated immediately. The seeder runs only in local and testing
+environments.
 
 To create only the default development user, run:
 
 ```shell
 ./vendor/bin/sail artisan app:seed-default-user
 ```
+
+The default user also receives the demo USD and cryptocurrency balances.
 
 ## Development
 

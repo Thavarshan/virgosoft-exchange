@@ -10,6 +10,7 @@ use App\Enums\OrderStatus;
 use App\Events\OrderMatched;
 use App\Models\Asset;
 use App\Models\Order;
+use App\Models\Trade;
 use App\Models\User;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
@@ -78,6 +79,19 @@ class OrderMatchingTest extends FeatureTestCase
         $this->assertSame('0.00', $seller->locked_balance);
         $this->assertSame('0.99000000', $sellerAsset->amount);
         $this->assertSame('0.00000000', $sellerAsset->locked_amount);
+
+        $this->assertDatabaseCount('trades', 1);
+        $trade = Trade::query()->firstOrFail();
+
+        $this->assertSame($buyOrder->id, $trade->buy_order_id);
+        $this->assertSame($sellOrder->id, $trade->sell_order_id);
+        $this->assertSame(AssetSymbol::BTC, $trade->symbol);
+        $this->assertSame('95000.00', $trade->price);
+        $this->assertSame('0.01000000', $trade->amount);
+        $this->assertSame('950.00', $trade->trade_value);
+        $this->assertSame('14.25', $trade->commission);
+        $this->assertTrue($trade->buyOrder->is($buyOrder));
+        $this->assertTrue($trade->sellOrder->is($sellOrder));
 
         Event::assertDispatched(OrderMatched::class, function (
             OrderMatched $event,
@@ -360,6 +374,12 @@ class OrderMatchingTest extends FeatureTestCase
 
         $this->assertSame('135.75', $buyer->balance);
         $this->assertSame('0.00', $buyer->locked_balance);
+
+        $trade = Trade::query()->firstOrFail();
+
+        $this->assertSame('95000.00', $trade->price);
+        $this->assertSame('950.00', $trade->trade_value);
+        $this->assertSame('14.25', $trade->commission);
     }
 
     public function test_failed_seller_settlement_rolls_back_buyer_settlement(): void
@@ -415,6 +435,7 @@ class OrderMatchingTest extends FeatureTestCase
         $this->assertSame('0.00', $seller->locked_balance);
         $this->assertSame(OrderStatus::OPEN, $sellOrder->status);
         $this->assertSame('0.00000000', $sellerAsset->locked_amount);
+        $this->assertDatabaseCount('trades', 0);
         Event::assertNotDispatched(OrderMatched::class);
     }
 

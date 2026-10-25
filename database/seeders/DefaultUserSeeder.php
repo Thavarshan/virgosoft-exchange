@@ -2,13 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Actions\Seeding\SeedDemoAccount;
+use App\Enums\AssetSymbol;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DefaultUserSeeder extends Seeder
 {
     use WithoutModelEvents;
+
+    public function __construct(
+        private readonly SeedDemoAccount $seedDemoAccount,
+    ) {}
 
     public const NAME = 'Demo Trader';
 
@@ -17,16 +22,22 @@ class DefaultUserSeeder extends Seeder
     public const PASSWORD = 'password';
 
     /**
-     * Seed the default local development user.
+     * Seed the default local development user with funds for demonstrations.
      */
     public function run(): void
     {
-        User::firstOrCreate(
-            ['email' => self::EMAIL],
-            [
-                'name' => self::NAME,
-                'password' => self::PASSWORD,
-                'email_verified_at' => now(),
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
+        $this->seedDemoAccount->execute(
+            name: self::NAME,
+            email: self::EMAIL,
+            password: self::PASSWORD,
+            balance: '1000.00',
+            assetBalances: [
+                AssetSymbol::BTC->value => '1.00000000',
+                AssetSymbol::ETH->value => '10.00000000',
             ],
         );
     }

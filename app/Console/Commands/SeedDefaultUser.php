@@ -27,8 +27,10 @@ class SeedDefaultUser extends Command
      */
     public function handle(): int
     {
-        if ($this->laravel->isProduction()) {
-            $this->error('The default development user cannot be seeded in production.');
+        if (! $this->laravel->environment(['local', 'testing'])) {
+            $this->error(
+                'Demo users can only be seeded in local or testing environments.',
+            );
 
             return self::FAILURE;
         }

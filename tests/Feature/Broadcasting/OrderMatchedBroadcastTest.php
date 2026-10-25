@@ -48,6 +48,7 @@ class OrderMatchedBroadcastTest extends TestCase
         Queue::assertNothingPushed();
         DB::commit();
 
+        $this->assertDatabaseCount('trades', 1);
         Queue::assertPushedTimes(BroadcastEvent::class, 1);
         Queue::assertPushed(BroadcastEvent::class, function (
             BroadcastEvent $job,
@@ -87,10 +88,12 @@ class OrderMatchedBroadcastTest extends TestCase
             ])->assertCreated();
 
             Queue::assertNothingPushed();
+            $this->assertDatabaseCount('trades', 1);
         } finally {
             DB::rollBack();
         }
 
+        $this->assertDatabaseCount('trades', 0);
         Queue::assertNotPushed(BroadcastEvent::class);
     }
 
