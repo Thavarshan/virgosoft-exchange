@@ -27,11 +27,15 @@ From a fresh checkout:
 ```shell
 make setup
 ./vendor/bin/sail artisan migrate --seed
+make dev
 ```
 
 `make setup` creates `.env` when needed, installs Composer dependencies,
 builds and starts Sail, generates an application key when one is not already
 configured, and installs frontend dependencies.
+
+Keep `make dev` running in a terminal; it starts Laravel and Vite before you
+open the application.
 
 The application is available at <http://localhost:8080>. The Vite development
 server uses port `5173`. PostgreSQL runs in the `pgsql` service and is exposed
@@ -92,8 +96,10 @@ uses these documented choices:
   opposite sides, the same symbol, equal quantity, and crossing prices.
 - Execution uses the existing counter-order’s price, not the incoming
   order’s limit price.
-- The buyer pays a `1.5%` commission on the executed USD trade value. The fee
-  is rounded up to the nearest cent, with a one-cent minimum for positive
+- USD trade value is calculated with exact decimal arithmetic and rounded up to
+  cents before commission is calculated.
+- The buyer pays a `1.5%` commission on that rounded trade value. The fee is
+  also rounded up to the nearest cent, with a one-cent minimum for positive
   trades.
 - Buy reservations cover the limit-price cost plus the commission. Any price
   improvement is refunded during settlement.
@@ -103,8 +109,10 @@ uses these documented choices:
 
 Placement, matching, settlement, cancellation, trade persistence, and the
 `OrderMatched` event run within the relevant database transaction. PostgreSQL
-transaction-scoped advisory locks serialize each market before participant row
-locks, preventing empty-book races and opposite lock-order deadlocks.
+transaction-scoped advisory locks serialize operations for the same market
+before participant row locks, preventing empty-book races. Placement and
+cancellation transactions retry detected deadlocks up to three times; the
+market lock does not eliminate every possible cross-market deadlock.
 
 ## Pusher and live updates
 
