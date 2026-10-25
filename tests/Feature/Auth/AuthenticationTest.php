@@ -4,7 +4,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 
 test('the SPA login shell is available', function () {
-    $this->get('/login')->assertOk();
+    $this->get('/login')
+        ->assertOk()
+        ->assertSee('<meta name="csrf-token"', false);
 });
 
 test('users can authenticate with Fortify', function () {

@@ -82,6 +82,31 @@ async function logout(): Promise<void> {
                     </button>
                 </div>
             </div>
+            <nav
+                class="flex border-t border-slate-200/80 px-5 py-2 md:hidden dark:border-slate-800"
+                aria-label="Primary navigation"
+            >
+                <RouterLink
+                    to="/trade"
+                    class="flex-1 rounded-lg px-3 py-2 text-center text-sm font-medium"
+                    :class="
+                        route.path === '/trade'
+                            ? 'bg-slate-100 dark:bg-slate-800'
+                            : 'text-slate-500 hover:text-slate-950 dark:hover:text-white'
+                    "
+                    >Trade</RouterLink
+                >
+                <RouterLink
+                    to="/wallet"
+                    class="flex-1 rounded-lg px-3 py-2 text-center text-sm font-medium"
+                    :class="
+                        route.path === '/wallet'
+                            ? 'bg-slate-100 dark:bg-slate-800'
+                            : 'text-slate-500 hover:text-slate-950 dark:hover:text-white'
+                    "
+                    >Wallet & Orders</RouterLink
+                >
+            </nav>
         </header>
         <main><RouterView /></main>
     </div>

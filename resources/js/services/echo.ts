@@ -1,5 +1,6 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import { csrfHeaders, csrfTokenFromMeta } from './csrf';
 
 declare global {
     interface Window {
@@ -19,6 +20,10 @@ export const echo = new Echo({
     forceTLS: (import.meta.env.VITE_PUSHER_SCHEME || 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
     authEndpoint: '/broadcasting/auth',
+    csrfToken: csrfTokenFromMeta(),
+    auth: {
+        headers: csrfHeaders(),
+    },
     withCredentials: true,
 });
 
