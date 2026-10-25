@@ -4,7 +4,6 @@ namespace App\Actions\Trading;
 
 use App\Enums\OrderSide;
 use App\Enums\OrderStatus;
-use App\Models\Asset;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,12 +11,12 @@ use Illuminate\Validation\ValidationException;
 
 class CancelOrder
 {
-    private const USD_SCALE = 2;
-
-    private const ASSET_SCALE = 8;
-
     public function __construct(
-        private readonly CalculateOrderCost $calculateOrderCost,
+        protected readonly CalculateOrderReservation $calculateOrderReservation,
+        protected readonly ReleaseUsd $releaseUsd,
+        protected readonly ReleaseAsset $releaseAsset,
+        protected readonly LockUser $lockUser,
+        protected readonly AcquireMarketLock $acquireMarketLock,
     ) {}
 
     /**
@@ -27,6 +26,7 @@ class CancelOrder
     {
         return DB::transaction(
             fn (): Order => $this->cancelWithinTransaction($user, $order),
+            attempts: 3,
         );
     }
 
@@ -35,23 +35,14 @@ class CancelOrder
      */
     protected function cancelWithinTransaction(User $user, Order $order): Order
     {
-        $lockedUser = $this->lockUser($user);
+        $this->acquireMarketLock->execute($order->symbol);
+        $lockedUser = $this->lockUser->execute($user);
         $lockedOrder = $this->lockOrder($lockedUser, $order);
 
         $this->ensureOrderIsOpen($lockedOrder);
         $this->releaseReservation($lockedUser, $lockedOrder);
 
         return $this->markAsCancelled($lockedOrder);
-    }
-
-    /**
-     * Reload and lock the user row for the transaction.
-     */
-    protected function lockUser(User $user): User
-    {
-        return User::query()
-            ->lockForUpdate()
-            ->findOrFail($user->id);
     }
 
     /**
@@ -85,64 +76,20 @@ class CancelOrder
     protected function releaseReservation(User $user, Order $order): void
     {
         if ($order->side === OrderSide::BUY) {
-            $this->releaseUsd($user, $order);
+            $reservation = $this->calculateOrderReservation->execute(
+                $order->price,
+                $order->amount,
+            );
+            $this->releaseUsd->execute($user, $reservation);
 
             return;
         }
 
-        $this->releaseAsset($user, $order);
-    }
-
-    /**
-     * Return a buy order's reserved USD to the available balance.
-     */
-    protected function releaseUsd(User $user, Order $order): void
-    {
-        $cost = $this->calculateOrderCost->execute(
-            $order->price,
+        $this->releaseAsset->execute(
+            $user,
+            $order->symbol,
             $order->amount,
         );
-
-        $user->balance = bcadd($user->balance, $cost, self::USD_SCALE);
-        $user->locked_balance = bcsub(
-            $user->locked_balance,
-            $cost,
-            self::USD_SCALE,
-        );
-        $user->save();
-    }
-
-    /**
-     * Move the cancelled sell quantity back to the user's available asset.
-     */
-    protected function releaseAsset(User $user, Order $order): void
-    {
-        $asset = Asset::query()
-            ->whereBelongsTo($user)
-            ->where('symbol', $order->symbol->value)
-            ->lockForUpdate()
-            ->first();
-
-        if (
-            $asset === null
-            || bccomp($asset->locked_amount, $order->amount, self::ASSET_SCALE) < 0
-        ) {
-            throw ValidationException::withMessages([
-                'asset' => 'The reserved asset balance could not be released.',
-            ]);
-        }
-
-        $asset->amount = bcadd(
-            $asset->amount,
-            $order->amount,
-            self::ASSET_SCALE,
-        );
-        $asset->locked_amount = bcsub(
-            $asset->locked_amount,
-            $order->amount,
-            self::ASSET_SCALE,
-        );
-        $asset->save();
     }
 
     /**

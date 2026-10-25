@@ -36,6 +36,7 @@ class ProfileTest extends FeatureTestCase
         $response = $this->actingAs($user)->getJson('/api/profile');
 
         $response->assertOk();
+        $response->assertJsonMissingPath('data');
         $response->assertJsonPath('user.balance', '1234.56');
         $response->assertJsonPath('user.locked_balance', '78.90');
         $response->assertJsonCount(1, 'user.assets');

@@ -33,6 +33,8 @@ class OrderCancellationTest extends FeatureTestCase
             ->postJson("/api/orders/{$order->id}/cancel");
 
         $response->assertOk();
+        $response->assertJsonStructure(['order']);
+        $response->assertJsonMissingPath('data');
         $asset->refresh();
         $order->refresh();
 
@@ -96,8 +98,8 @@ class OrderCancellationTest extends FeatureTestCase
         $otherUser->refresh();
 
         $this->assertSame(OrderStatus::OPEN, $order->status);
-        $this->assertSame('800.00', $owner->balance);
-        $this->assertSame('200.00', $owner->locked_balance);
+        $this->assertSame('797.00', $owner->balance);
+        $this->assertSame('203.00', $owner->locked_balance);
         $this->assertSame('0.00', $otherUser->balance);
         $this->assertSame('0.00', $otherUser->locked_balance);
     }
@@ -146,8 +148,8 @@ class OrderCancellationTest extends FeatureTestCase
 
         $order = Order::query()->latest('id')->firstOrFail();
         $user->refresh();
-        $this->assertSame('0.99', $user->balance);
-        $this->assertSame('0.01', $user->locked_balance);
+        $this->assertSame('0.98', $user->balance);
+        $this->assertSame('0.02', $user->locked_balance);
 
         $response = $this->actingAs($user)
             ->postJson("/api/orders/{$order->id}/cancel");

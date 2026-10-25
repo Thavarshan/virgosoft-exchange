@@ -8,7 +8,6 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Attributes\Controllers\Middleware;
 
 #[Middleware('auth:sanctum')]
@@ -21,11 +20,7 @@ class OrderCancellationController extends Controller
         Order $order,
         #[CurrentUser] User $user,
         CancelOrder $cancelOrder,
-    ): JsonResponse {
-        $order = $cancelOrder->execute($user, $order);
-
-        return response()->json([
-            'order' => OrderResource::make($order),
-        ]);
+    ): OrderResource {
+        return OrderResource::make($cancelOrder->execute($user, $order));
     }
 }

@@ -2,16 +2,42 @@
 
 namespace Tests\Feature\Trading;
 
+use App\Actions\Trading\OrderData;
+use App\Actions\Trading\PlaceOrder;
 use App\Enums\AssetSymbol;
 use App\Enums\OrderSide;
 use App\Enums\OrderStatus;
 use App\Models\Asset;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Tests\FeatureTestCase;
 
 class OrderPlacementTest extends FeatureTestCase
 {
+    public function test_order_placement_configures_transaction_retries(): void
+    {
+        $user = User::factory()->make();
+        $order = Order::factory()->make();
+        $orderData = new OrderData(
+            symbol: AssetSymbol::BTC,
+            side: OrderSide::BUY,
+            price: '20000.00',
+            amount: '0.01000000',
+        );
+
+        DB::shouldReceive('transaction')
+            ->once()
+            ->withArgs(function (\Closure $callback, int $attempts): bool {
+                return $attempts === 3;
+            })
+            ->andReturn($order);
+
+        $result = app(PlaceOrder::class)->execute($user, $orderData);
+
+        $this->assertSame($order, $result);
+    }
+
     public function test_guests_cannot_place_orders(): void
     {
         $response = $this->postJson('/api/orders', [
@@ -38,6 +64,8 @@ class OrderPlacementTest extends FeatureTestCase
         ]);
 
         $response->assertCreated();
+        $response->assertJsonStructure(['order']);
+        $response->assertJsonMissingPath('data');
         $this->assertDatabaseCount('orders', 1);
 
         $order = Order::query()->latest('id')->firstOrFail();
@@ -51,8 +79,8 @@ class OrderPlacementTest extends FeatureTestCase
 
         $user->refresh();
 
-        $this->assertSame('800.00', $user->balance);
-        $this->assertSame('200.00', $user->locked_balance);
+        $this->assertSame('797.00', $user->balance);
+        $this->assertSame('203.00', $user->locked_balance);
     }
 
     public function test_users_can_cancel_buy_orders_and_release_reserved_usd(): void
@@ -217,8 +245,8 @@ class OrderPlacementTest extends FeatureTestCase
 
         $user->refresh();
 
-        $this->assertSame('0.99', $user->balance);
-        $this->assertSame('0.01', $user->locked_balance);
+        $this->assertSame('0.98', $user->balance);
+        $this->assertSame('0.02', $user->locked_balance);
     }
 
     public function test_users_cannot_place_an_order_when_the_rounded_cost_exceeds_balance(): void
@@ -260,8 +288,8 @@ class OrderPlacementTest extends FeatureTestCase
 
         $user->refresh();
 
-        $this->assertSame('0.99', $user->balance);
-        $this->assertSame('1.01', $user->locked_balance);
+        $this->assertSame('0.97', $user->balance);
+        $this->assertSame('1.03', $user->locked_balance);
     }
 
     public function test_numeric_order_values_are_rejected_as_unprocessable(): void

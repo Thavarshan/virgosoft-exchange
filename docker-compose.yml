@@ -38,7 +38,11 @@ services:
         networks:
             - sail
         healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-virgosoft} -d ${DB_DATABASE:-virgosoft}']
+            test:
+                [
+                    'CMD-SHELL',
+                    'pg_isready -U ${DB_USERNAME:-virgosoft} -d ${DB_DATABASE:-virgosoft}',
+                ]
             interval: 5s
             timeout: 5s
             retries: 10

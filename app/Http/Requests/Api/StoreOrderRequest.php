@@ -2,11 +2,13 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Actions\Trading\OrderData;
 use App\Enums\AssetSymbol;
 use App\Enums\OrderSide;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use LogicException;
 
 class StoreOrderRequest extends FormRequest
 {
@@ -51,34 +53,32 @@ class StoreOrderRequest extends FormRequest
     }
 
     /**
-     * Get the validated order data with decimal strings preserved.
-     *
-     * @return array{symbol: string, side: string, price: numeric-string, amount: numeric-string}
+     * Get the validated order data as an immutable trading value object.
      */
-    public function orderData(): array
+    public function orderData(): OrderData
     {
         $validated = $this->validated();
-        $symbol = $validated['symbol'] ?? null;
-        $side = $validated['side'] ?? null;
-        $price = $validated['price'] ?? null;
-        $amount = $validated['amount'] ?? null;
 
-        if (
-            ! is_string($symbol)
-            || ! is_string($side)
-            || ! is_string($price)
-            || ! is_numeric($price)
-            || ! is_string($amount)
-            || ! is_numeric($amount)
-        ) {
-            throw new \LogicException('The order data is not valid.');
+        return new OrderData(
+            symbol: AssetSymbol::from((string) $validated['symbol']),
+            side: OrderSide::from((string) $validated['side']),
+            price: $this->numericString($validated['price'] ?? null),
+            amount: $this->numericString($validated['amount'] ?? null),
+        );
+    }
+
+    /**
+     * Convert a validated decimal input to the numeric-string type used by
+     * BCMath operations.
+     *
+     * @return numeric-string
+     */
+    protected function numericString(mixed $value): string
+    {
+        if (! is_string($value) || ! is_numeric($value)) {
+            throw new LogicException('The order data is not valid.');
         }
 
-        return [
-            'symbol' => $symbol,
-            'side' => $side,
-            'price' => $price,
-            'amount' => $amount,
-        ];
+        return $value;
     }
 }

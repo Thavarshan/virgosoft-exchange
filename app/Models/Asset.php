@@ -15,8 +15,8 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property AssetSymbol $symbol
- * @property string $amount
- * @property string $locked_amount
+ * @property numeric-string $amount
+ * @property numeric-string $locked_amount
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user

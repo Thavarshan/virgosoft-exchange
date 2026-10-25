@@ -12,6 +12,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class OrderResource extends JsonResource
 {
     /**
+     * Preserve the existing single-order response envelope.
+     *
+     * @var string
+     */
+    public static $wrap = 'order';
+
+    /**
      * Transform the resource into an array.
      *
      * @return array<string, mixed>

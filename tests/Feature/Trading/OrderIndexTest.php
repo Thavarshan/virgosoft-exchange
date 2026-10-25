@@ -12,6 +12,39 @@ use Tests\FeatureTestCase;
 
 class OrderIndexTest extends FeatureTestCase
 {
+    public function test_guests_cannot_view_the_order_book(): void
+    {
+        $response = $this->getJson('/api/orders?symbol=BTC');
+
+        $response->assertUnauthorized();
+    }
+
+    public function test_order_book_requires_a_supported_symbol(): void
+    {
+        $user = User::factory()->create();
+
+        $missingSymbol = $this->actingAs($user)->getJson('/api/orders');
+        $missingSymbol->assertUnprocessable();
+        $missingSymbol->assertJsonValidationErrors('symbol');
+
+        $unsupportedSymbol = $this->actingAs($user)
+            ->getJson('/api/orders?symbol=DOGE');
+        $unsupportedSymbol->assertUnprocessable();
+        $unsupportedSymbol->assertJsonValidationErrors('symbol');
+    }
+
+    public function test_a_valid_symbol_with_no_open_orders_returns_an_empty_order_book(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/orders?symbol=BTC');
+
+        $response->assertOk();
+        $response->assertExactJson(['orders' => []]);
+        $response->assertJsonMissingPath('data');
+    }
+
     public function test_it_returns_only_open_btc_orders_in_order_book_order(): void
     {
         $firstUser = User::factory()->create();
@@ -90,6 +123,7 @@ class OrderIndexTest extends FeatureTestCase
     {
         $user = User::factory()->create();
         $createdAt = Carbon::parse('2026-01-01 12:00:00');
+        $newerCreatedAt = $createdAt->copy()->addMinute();
 
         $firstBuy = Order::factory()->for($user)->create([
             'symbol' => AssetSymbol::BTC,
@@ -112,18 +146,28 @@ class OrderIndexTest extends FeatureTestCase
             'price' => '21000.00',
         ]);
 
-        foreach ([$firstBuy, $secondBuy, $firstSell, $secondSell] as $order) {
-            $order->forceFill([
-                'created_at' => $createdAt,
-                'updated_at' => $createdAt,
-            ])->saveQuietly();
-        }
+        $firstBuy->forceFill([
+            'created_at' => $newerCreatedAt,
+            'updated_at' => $newerCreatedAt,
+        ])->saveQuietly();
+        $secondBuy->forceFill([
+            'created_at' => $createdAt,
+            'updated_at' => $createdAt,
+        ])->saveQuietly();
+        $firstSell->forceFill([
+            'created_at' => $createdAt,
+            'updated_at' => $createdAt,
+        ])->saveQuietly();
+        $secondSell->forceFill([
+            'created_at' => $createdAt,
+            'updated_at' => $createdAt,
+        ])->saveQuietly();
 
         $response = $this->actingAs($user)->getJson('/api/orders?symbol=BTC');
 
         $response->assertOk();
-        $response->assertJsonPath('orders.0.id', $firstBuy->id);
-        $response->assertJsonPath('orders.1.id', $secondBuy->id);
+        $response->assertJsonPath('orders.0.id', $secondBuy->id);
+        $response->assertJsonPath('orders.1.id', $firstBuy->id);
         $response->assertJsonPath('orders.2.id', $firstSell->id);
         $response->assertJsonPath('orders.3.id', $secondSell->id);
     }

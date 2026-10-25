@@ -21,22 +21,7 @@ class SecurityController extends Controller
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'canManagePasskeys' => Features::canManagePasskeys(),
-            'passkeys' => Features::canManagePasskeys()
-                ? $request->user()
-                    ->passkeys()
-                    ->select(['id', 'name', 'credential', 'created_at', 'last_used_at'])
-                    ->latest()
-                    ->get()
-                    ->map(fn ($passkey) => [
-                        'id' => $passkey->id,
-                        'name' => $passkey->name,
-                        'authenticator' => $passkey->authenticator,
-                        'created_at_diff' => $passkey->created_at->diffForHumans(),
-                        'last_used_at_diff' => $passkey->last_used_at?->diffForHumans(),
-                    ])
-                    ->values()
-                    ->all()
-                : [],
+            'passkeys' => $this->passkeys($request),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ];
 
@@ -48,6 +33,33 @@ class SecurityController extends Controller
         }
 
         return Inertia::render('settings/Security', $props);
+    }
+
+    /**
+     * Map the user's passkeys to the compact structure used by the page.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function passkeys(TwoFactorAuthenticationRequest $request): array
+    {
+        if (! Features::canManagePasskeys()) {
+            return [];
+        }
+
+        return $request->user()
+            ->passkeys()
+            ->select(['id', 'name', 'credential', 'created_at', 'last_used_at'])
+            ->latest()
+            ->get()
+            ->map(fn ($passkey): array => [
+                'id' => $passkey->id,
+                'name' => $passkey->name,
+                'authenticator' => $passkey->authenticator,
+                'created_at_diff' => $passkey->created_at->diffForHumans(),
+                'last_used_at_diff' => $passkey->last_used_at?->diffForHumans(),
+            ])
+            ->values()
+            ->all();
     }
 
     /**
