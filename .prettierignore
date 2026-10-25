@@ -1,0 +1,4 @@
+node_modules
+public/build
+resources/js/actions
+resources/js/routes
