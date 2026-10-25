@@ -8,5 +8,11 @@ export default tseslint.config(
     ...tseslint.configs.recommended,
     ...vue.configs['flat/recommended'],
     prettier,
-    { ignores: ['public/**', 'resources/js/actions/**', 'resources/js/routes/**'] },
+    {
+        ignores: [
+            'public/**',
+            'resources/js/actions/**',
+            'resources/js/routes/**',
+        ],
+    },
 );

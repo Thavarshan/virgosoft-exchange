@@ -34,7 +34,7 @@ lint:
 	npm run lint
 
 analyse:
-	phpstan analyse
+	vendor/bin/phpstan analyse
 	npm run types:check
 
 build:

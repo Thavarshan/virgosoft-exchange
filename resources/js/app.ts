@@ -13,7 +13,11 @@ const router = createRouter({
         { path: '/login', component: Login, meta: { guest: true } },
         { path: '/', redirect: '/trade' },
         { path: '/trade', component: LimitOrder, meta: { requiresAuth: true } },
-        { path: '/wallet', component: WalletOrders, meta: { requiresAuth: true } },
+        {
+            path: '/wallet',
+            component: WalletOrders,
+            meta: { requiresAuth: true },
+        },
     ],
 });
 

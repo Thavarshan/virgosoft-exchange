@@ -12,6 +12,5 @@ parameters:
     excludePaths:
         - app/Http/Controllers/Settings/*
         - app/Http/Requests/Settings/*
-        - app/Http/Middleware/HandleInertiaRequests.php
 
     level: 7

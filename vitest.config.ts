@@ -5,5 +5,9 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
     plugins: [vue()],
     test: { environment: 'jsdom', globals: true },
-    resolve: { alias: { '@': fileURLToPath(new URL('./resources/js', import.meta.url)) } },
+    resolve: {
+        alias: {
+            '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
+        },
+    },
 });
