@@ -47,6 +47,8 @@ export default defineConfig({
             'resources/js/components/ui/*',
             'resources/js/routes/**',
             'resources/js/wayfinder/**',
+            'resources/js/composables/useAppearance.ts',
+            'resources/js/lib/flashToast.ts',
         ],
         options: {
             denyWarnings: true,
