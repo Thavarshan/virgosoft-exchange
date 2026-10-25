@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +21,8 @@ use Laravel\Sanctum\HasApiTokens;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property numeric-string $balance
+ * @property numeric-string $locked_balance
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -33,6 +36,7 @@ use Laravel\Sanctum\HasApiTokens;
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
@@ -56,6 +60,8 @@ class User extends Authenticatable implements PasskeyUser
 
     /**
      * Get the user's cryptocurrency asset balances.
+     *
+     * @return HasMany<Asset, $this>
      */
     public function assets(): HasMany
     {
@@ -64,6 +70,8 @@ class User extends Authenticatable implements PasskeyUser
 
     /**
      * Get the user's orders.
+     *
+     * @return HasMany<Order, $this>
      */
     public function orders(): HasMany
     {

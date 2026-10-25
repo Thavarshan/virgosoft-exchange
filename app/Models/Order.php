@@ -7,6 +7,7 @@ use App\Enums\OrderSide;
 use App\Enums\OrderStatus;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,8 +18,8 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property AssetSymbol $symbol
  * @property OrderSide $side
- * @property string $price
- * @property string $amount
+ * @property numeric-string $price
+ * @property numeric-string $amount
  * @property OrderStatus $status
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -26,6 +27,7 @@ use Illuminate\Support\Carbon;
  */
 // Status changes belong to matching and settlement, not client mass assignment.
 #[Fillable(['user_id', 'symbol', 'side', 'price', 'amount'])]
+#[UseFactory(OrderFactory::class)]
 
 class Order extends Model
 {
@@ -50,6 +52,8 @@ class Order extends Model
 
     /**
      * Get the user that owns the order.
+     *
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {

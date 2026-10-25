@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AssetSymbol;
 use Database\Factories\AssetFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property-read User $user
  */
 #[Fillable(['user_id', 'symbol'])]
+#[UseFactory(AssetFactory::class)]
 class Asset extends Model
 {
     /** @use HasFactory<AssetFactory> */
@@ -42,6 +44,8 @@ class Asset extends Model
 
     /**
      * Get the user that owns the asset.
+     *
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
