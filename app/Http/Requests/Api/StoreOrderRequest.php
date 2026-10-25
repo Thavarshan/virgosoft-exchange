@@ -30,7 +30,6 @@ class StoreOrderRequest extends FormRequest
             'side' => [
                 'required',
                 Rule::enum(OrderSide::class),
-                Rule::in([OrderSide::BUY->value]),
             ],
             // Match decimal(20, 2): 18 integer and 2 fractional digits.
             'price' => [
@@ -54,17 +53,19 @@ class StoreOrderRequest extends FormRequest
     /**
      * Get the validated order data with decimal strings preserved.
      *
-     * @return array{symbol: string, price: numeric-string, amount: numeric-string}
+     * @return array{symbol: string, side: string, price: numeric-string, amount: numeric-string}
      */
     public function orderData(): array
     {
         $validated = $this->validated();
         $symbol = $validated['symbol'] ?? null;
+        $side = $validated['side'] ?? null;
         $price = $validated['price'] ?? null;
         $amount = $validated['amount'] ?? null;
 
         if (
             ! is_string($symbol)
+            || ! is_string($side)
             || ! is_string($price)
             || ! is_numeric($price)
             || ! is_string($amount)
@@ -75,6 +76,7 @@ class StoreOrderRequest extends FormRequest
 
         return [
             'symbol' => $symbol,
+            'side' => $side,
             'price' => $price,
             'amount' => $amount,
         ];

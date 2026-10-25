@@ -119,13 +119,7 @@
         "skipLibCheck": true /* Skip type checking all .d.ts files. */
     },
     "include": [
-        "resources/js/app.ts",
-        "resources/js/App.vue",
-        "resources/js/components/AppShell.vue",
-        "resources/js/composables/useTheme.ts",
-        "resources/js/pages/Login.vue",
-        "resources/js/pages/LimitOrder.vue",
-        "resources/js/pages/WalletOrders.vue",
-        "resources/js/services/*.ts"
+        "resources/js/**/*.ts",
+        "resources/js/**/*.vue"
     ]
 }

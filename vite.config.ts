@@ -1,3 +1,5 @@
+import inertia from '@inertiajs/vite';
+import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
@@ -15,6 +17,7 @@ export default defineConfig({
                 }),
             ],
         }),
+        inertia(),
         tailwindcss(),
         vue({
             template: {
@@ -23,6 +26,9 @@ export default defineConfig({
                     includeAbsolute: false,
                 },
             },
+        }),
+        wayfinder({
+            formVariants: true,
         }),
     ]),
     server: {
@@ -47,8 +53,6 @@ export default defineConfig({
             'resources/js/components/ui/*',
             'resources/js/routes/**',
             'resources/js/wayfinder/**',
-            'resources/js/composables/useAppearance.ts',
-            'resources/js/lib/flashToast.ts',
         ],
         options: {
             denyWarnings: true,

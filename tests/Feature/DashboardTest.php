@@ -7,9 +7,11 @@ use Tests\FeatureTestCase;
 
 class DashboardTest extends FeatureTestCase
 {
-    public function test_the_authenticated_spa_shell_is_available(): void
+    public function test_authenticated_users_can_access_the_dashboard(): void
     {
-        $this->get('/trade')->assertOk();
+        $this->actingAs(User::factory()->create())
+            ->get('/dashboard')
+            ->assertOk();
     }
 
     public function test_authenticated_users_can_access_their_session(): void

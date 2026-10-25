@@ -16,7 +16,10 @@
         "format:check": "prettier --check resources/js resources/css"
     },
     "dependencies": {
+        "@inertiajs/vite": "^3.9.1",
+        "@inertiajs/vue3": "^3.9.1",
         "@laravel/passkeys": "^0.2.0",
+        "@laravel/vite-plugin-wayfinder": "^0.1.11",
         "@lucide/vue": "^1.61.0",
         "@vueuse/core": "^12.8.2",
         "axios": "^1.20.0",

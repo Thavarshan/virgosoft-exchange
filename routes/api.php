@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\OrderCancellationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Http\Request;
@@ -10,6 +11,9 @@ Route::get('/profile', [ProfileController::class, 'show'])
 
 Route::post('/orders', [OrderController::class, 'store'])
     ->name('api.orders.store');
+
+Route::post('/orders/{order}/cancel', OrderCancellationController::class)
+    ->name('api.orders.cancel');
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/session', function (Request $request) {

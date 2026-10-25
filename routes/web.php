@@ -1,10 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::view('/login', 'app')->name('login');
-Route::view('/register', 'app')->name('register');
+Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
 
-Route::view('/{any?}', 'app')
-    ->where('any', '^(?!api|login|logout|sanctum|broadcasting|up).*$')
-    ->name('home');
+Route::get('dashboard', fn () => Inertia::render('Dashboard'))
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');

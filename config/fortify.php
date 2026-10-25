@@ -131,7 +131,7 @@ return [
     |
     */
 
-    'views' => false,
+    'views' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -168,6 +168,7 @@ return [
             'confirmPassword' => true,
             // 'window' => 0
         ]),
+        Features::passkeys(),
     ],
 
 ];

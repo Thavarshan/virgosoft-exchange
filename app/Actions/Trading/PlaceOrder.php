@@ -4,6 +4,7 @@ namespace App\Actions\Trading;
 
 use App\Enums\OrderSide;
 use App\Enums\OrderStatus;
+use App\Models\Asset;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -11,11 +12,16 @@ use Illuminate\Validation\ValidationException;
 
 class PlaceOrder
 {
+    public function __construct(
+        private readonly CalculateOrderCost $calculateOrderCost,
+    ) {}
+
     /**
-     * Place a buy order and reserve its USD cost atomically.
+     * Place an order and reserve its funds atomically.
      *
      * @param  array{
      *     symbol: string,
+     *     side: string,
      *     price: numeric-string,
      *     amount: numeric-string,
      * }  $attributes
@@ -24,25 +30,33 @@ class PlaceOrder
     {
         // The transaction keeps balance reservation and order creation atomic.
         return DB::transaction(
-            fn (): Order => $this->placeBuyOrder($user, $attributes),
+            fn (): Order => $this->placeOrder($user, $attributes),
         );
     }
 
     /**
-     * Lock the owner, reserve the USD cost, and create the order.
+     * Lock the owner, reserve the appropriate funds, and create the order.
      *
      * @param  array{
      *     symbol: string,
+     *     side: string,
      *     price: numeric-string,
      *     amount: numeric-string,
      * }  $attributes
      */
-    protected function placeBuyOrder(User $user, array $attributes): Order
+    protected function placeOrder(User $user, array $attributes): Order
     {
         $lockedUser = $this->lockUser($user);
-        $cost = $this->calculateCost($attributes);
 
-        $this->reserveBalance($lockedUser, $cost);
+        if ($attributes['side'] === OrderSide::SELL->value) {
+            $this->reserveAsset($lockedUser, $attributes);
+        } else {
+            $cost = $this->calculateOrderCost->execute(
+                $attributes['price'],
+                $attributes['amount'],
+            );
+            $this->reserveBalance($lockedUser, $cost);
+        }
 
         return $this->createOrder($lockedUser, $attributes);
     }
@@ -56,27 +70,6 @@ class PlaceOrder
         return User::query()
             ->lockForUpdate()
             ->findOrFail($user->id);
-    }
-
-    /**
-     * Calculate the order's USD cost using exact decimal arithmetic.
-     *
-     * @param  array{price: numeric-string, amount: numeric-string}  $attributes
-     * @return numeric-string
-     */
-    protected function calculateCost(array $attributes): string
-    {
-        // BCMath avoids floating-point rounding during financial calculations.
-        $rawCost = bcmul($attributes['price'], $attributes['amount'], 10);
-        $wholeCents = bcdiv($rawCost, '0.01', 0);
-        $roundedCost = bcdiv($wholeCents, '100', 2);
-
-        // Round up so every order reserves at least one cent when needed.
-        if (bccomp($rawCost, $roundedCost, 10) > 0) {
-            return bcadd($roundedCost, '0.01', 2);
-        }
-
-        return $roundedCost;
     }
 
     /**
@@ -99,10 +92,40 @@ class PlaceOrder
     }
 
     /**
+     * Lock the user's asset row and reserve the requested quantity.
+     *
+     * @param  array{symbol: string, amount: numeric-string}  $attributes
+     */
+    protected function reserveAsset(User $user, array $attributes): void
+    {
+        $asset = Asset::query()
+            ->whereBelongsTo($user)
+            ->where('symbol', $attributes['symbol'])
+            ->lockForUpdate()
+            ->first();
+
+        if ($asset === null || bccomp($asset->amount, $attributes['amount'], 8) < 0) {
+            throw ValidationException::withMessages([
+                'asset' => 'Insufficient available asset balance.',
+            ]);
+        }
+
+        // Move the quantity only after the locked row passes the funds check.
+        $asset->amount = bcsub($asset->amount, $attributes['amount'], 8);
+        $asset->locked_amount = bcadd(
+            $asset->locked_amount,
+            $attributes['amount'],
+            8,
+        );
+        $asset->save();
+    }
+
+    /**
      * Create an open buy order owned by the locked user.
      *
      * @param  array{
      *     symbol: string,
+     *     side: string,
      *     price: numeric-string,
      *     amount: numeric-string,
      * }  $attributes
@@ -112,7 +135,7 @@ class PlaceOrder
         // Ownership, side, and status are derived here rather than trusted.
         return tap(new Order([
             'symbol' => $attributes['symbol'],
-            'side' => OrderSide::BUY,
+            'side' => OrderSide::from($attributes['side']),
             'price' => $attributes['price'],
             'amount' => $attributes['amount'],
         ]), function (Order $order) use ($user): void {

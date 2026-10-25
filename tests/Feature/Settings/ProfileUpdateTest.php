@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Models\User;
 use Tests\FeatureTestCase;
 
 class ProfileUpdateTest extends FeatureTestCase
 {
-    public function test_the_wallet_route_is_available_as_a_frontend_shell(): void
+    public function test_authenticated_users_can_access_their_profile_settings(): void
     {
-        $this->get('/wallet')->assertOk();
+        $this->actingAs(User::factory()->create())
+            ->get('/settings/profile')
+            ->assertOk();
     }
 }

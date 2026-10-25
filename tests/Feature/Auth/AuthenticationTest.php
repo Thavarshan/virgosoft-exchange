@@ -4,16 +4,19 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\FeatureTestCase;
 
 class AuthenticationTest extends FeatureTestCase
 {
-    public function test_the_spa_login_shell_is_available(): void
+    public function test_the_inertia_login_page_is_available(): void
     {
         $response = $this->get('/login');
 
-        $response->assertOk();
-        $response->assertSee('<meta name="csrf-token"', false);
+        $response->assertInertia(fn (Assert $page): Assert => $page
+            ->component('auth/Login')
+            ->where('canResetPassword', true)
+            ->where('status', null));
     }
 
     public function test_users_can_authenticate_with_fortify(): void
