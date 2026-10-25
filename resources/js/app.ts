@@ -4,6 +4,7 @@ import App from '@/App.vue';
 import { initializeTheme } from '@/composables/useTheme';
 import { api } from '@/services/api';
 import Login from '@/pages/Login.vue';
+import Register from '@/pages/Register.vue';
 import LimitOrder from '@/pages/LimitOrder.vue';
 import WalletOrders from '@/pages/WalletOrders.vue';
 
@@ -11,6 +12,7 @@ const router = createRouter({
     history: createWebHistory(),
     routes: [
         { path: '/login', component: Login, meta: { guest: true } },
+        { path: '/register', component: Register, meta: { guest: true } },
         { path: '/', redirect: '/trade' },
         { path: '/trade', component: LimitOrder, meta: { requiresAuth: true } },
         {

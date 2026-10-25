@@ -11,17 +11,22 @@ Virgosoft Exchange is a Laravel 13 + Vue 3 foundation for a cryptocurrency limit
 
 ## Prerequisites
 
-Install PHP 8.3+, Composer, Node 22+, npm, Docker Desktop, and Git. Docker is used only for PostgreSQL during local development.
+Install Docker Desktop and Git. PHP, Composer, Node, npm, PostgreSQL, and the application runtime are provided by Laravel Sail or the setup bootstrap container.
 
 ## First-time setup
 
 ```shell
 make setup
-make db-up
-php artisan migrate --seed
+./vendor/bin/sail artisan migrate --seed
 ```
 
 The local-only seed creates `test@example.com` and `demo@example.com`, both using the password `password`. The seeder exits without creating users in production.
+
+To create only the default development user, run:
+
+```shell
+./vendor/bin/sail artisan app:seed-default-user
+```
 
 ## Development
 
@@ -29,7 +34,9 @@ The local-only seed creates `test@example.com` and `demo@example.com`, both usin
 make dev
 ```
 
-This starts Laravel and Vite through the project’s Composer development command. In another terminal, keep `make db-up` running. Start a queue worker with `php artisan queue:work` when testing queued work.
+This starts Laravel and Vite through the project’s Composer development command inside Sail. Start a queue worker with `./vendor/bin/sail artisan queue:work` when testing queued work.
+
+The application is available at `http://localhost:8080`. PostgreSQL runs in the `pgsql` Sail service, and its data is stored in the `sail-pgsql` Docker volume.
 
 ## Authentication and API
 
@@ -44,20 +51,20 @@ Local development defaults to the `log` broadcast connection and tests use `null
 ```shell
 make test
 make test-file file=tests/Feature/Auth/AuthenticationTest.php
-make test-filter filter="users can authenticate"
+make test-filter filter="users_can_authenticate"
 make frontend-test
 make lint
 make analyse
 make build
 ```
 
-Backend tests require PostgreSQL. Run `make db-up` first; the Compose init script creates `virgosoft_testing` alongside the development database. `php artisan migrate:fresh --seed` resets disposable development data.
+Backend tests require PostgreSQL. Run `make db-up` first; the Compose init script creates `virgosoft_testing` alongside the development database. `make fresh` resets disposable development data.
 
 See [docs/development-workflow.md](docs/development-workflow.md) for red-green-refactor TDD, [docs/architecture.md](docs/architecture.md) for design decisions, and [docs/assessment-roadmap.md](docs/assessment-roadmap.md) for the intentionally unimplemented trading work.
 
 ## Troubleshooting
 
-- Check PostgreSQL with `docker compose ps` and `docker compose logs postgres`.
-- If configuration is stale, run `php artisan optimize:clear`.
-- If frontend assets are missing, run `npm run build` or `npm run dev`.
+- Check PostgreSQL with `docker compose ps` and `docker compose logs pgsql`.
+- If configuration is stale, run `./vendor/bin/sail artisan optimize:clear`.
+- If frontend assets are missing, run `./vendor/bin/sail npm run build` or `make dev`.
 - If auth cookies fail across hosts, keep the browser and Laravel URL on the same host and check `SANCTUM_STATEFUL_DOMAINS`.

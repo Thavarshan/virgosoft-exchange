@@ -6,13 +6,20 @@ use Tests\FeatureTestCase;
 
 class RegistrationTest extends FeatureTestCase
 {
-    public function test_public_registration_is_disabled(): void
+    public function test_users_can_register(): void
     {
-        $this->postJson('/register', [
+        $response = $this->postJson('/register', [
             'name' => 'New User',
             'email' => 'new@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-        ])->assertMethodNotAllowed();
+        ]);
+
+        $response->assertSuccessful();
+        $this->assertDatabaseHas('users', [
+            'name' => 'New User',
+            'email' => 'new@example.com',
+        ]);
+        $this->assertAuthenticated();
     }
 }

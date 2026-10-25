@@ -1,24 +1,52 @@
 services:
-    postgres:
-        image: postgres:17-alpine
-        environment:
-            POSTGRES_USER: ${POSTGRES_USER:-virgosoft}
-            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-virgosoft}
-            POSTGRES_DB: ${POSTGRES_DB:-virgosoft}
+    laravel.test:
+        build:
+            context: ./vendor/laravel/sail/runtimes/8.5
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP:-1000}'
+        image: sail-8.5/app
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
         ports:
-            - '${POSTGRES_PORT:-5432}:5432'
+            - '${APP_PORT:-8080}:80'
+            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
+            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
+            IGNITION_LOCAL_SITES_PATH: '${PWD}'
         volumes:
-            - virgosoft-postgres:/var/lib/postgresql/data
-            - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            pgsql:
+                condition: service_healthy
+    pgsql:
+        image: 'postgres:17-alpine'
+        environment:
+            POSTGRES_DB: '${DB_DATABASE:-virgosoft}'
+            POSTGRES_USER: '${DB_USERNAME:-virgosoft}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-virgosoft}'
+        ports:
+            - '${FORWARD_DB_PORT:-5432}:5432'
+        volumes:
+            - 'sail-pgsql:/var/lib/postgresql/data'
+            - './docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro'
+        networks:
+            - sail
         healthcheck:
-            test:
-                [
-                    'CMD-SHELL',
-                    'pg_isready -U ${POSTGRES_USER:-virgosoft} -d ${POSTGRES_DB:-virgosoft}',
-                ]
+            test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-virgosoft} -d ${DB_DATABASE:-virgosoft}']
             interval: 5s
             timeout: 5s
             retries: 10
 
 volumes:
-    virgosoft-postgres:
+    sail-pgsql:
+        driver: local
+
+networks:
+    sail:
+        driver: bridge

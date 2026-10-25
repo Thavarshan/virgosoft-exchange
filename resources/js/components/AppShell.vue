@@ -20,7 +20,7 @@ async function logout(): Promise<void> {
         class="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50"
     >
         <header
-            v-if="route.path !== '/login'"
+            v-if="!['/login', '/register'].includes(route.path)"
             class="border-b border-slate-200/80 bg-white/90 dark:border-slate-800 dark:bg-slate-950/90"
         >
             <div

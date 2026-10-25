@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import PasswordInput from '@/components/PasswordInput.vue';
+import { Spinner } from '@/components/ui/spinner';
 import { apiClient, initializeCsrf, toApiError } from '@/services/api';
 
 const router = useRouter();
@@ -30,58 +42,61 @@ async function login(): Promise<void> {
 
 <template>
     <section
-        class="mx-auto flex min-h-[calc(100vh-1px)] max-w-md items-center px-5 py-12"
+        class="flex min-h-svh items-center justify-center bg-muted p-6 md:p-10"
     >
-        <div
-            class="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-        >
-            <div class="mb-8">
-                <p class="eyebrow">Virgosoft Exchange</p>
-                <h1 class="mt-3 text-3xl font-semibold tracking-tight">
-                    Welcome back
-                </h1>
-                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <Card class="w-full max-w-md">
+            <CardHeader class="text-center">
+                <p class="text-sm font-semibold tracking-wide text-primary">
+                    Virgosoft Exchange
+                </p>
+                <CardTitle class="text-2xl">Welcome back</CardTitle>
+                <CardDescription>
                     Sign in to your trading workspace.
-                </p>
-            </div>
-            <form class="grid gap-5" @submit.prevent="login">
-                <div>
-                    <label for="email" class="field-label">Email</label
-                    ><input
-                        id="email"
-                        v-model="email"
-                        type="email"
-                        autocomplete="email"
-                        required
-                        class="field mt-2"
-                    />
-                </div>
-                <div>
-                    <label for="password" class="field-label">Password</label
-                    ><input
-                        id="password"
-                        v-model="password"
-                        type="password"
-                        autocomplete="current-password"
-                        required
-                        class="field mt-2"
-                    />
-                </div>
-                <p
-                    v-if="error"
-                    class="rounded-xl bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
-                    role="alert"
-                >
-                    {{ error }}
-                </p>
-                <button
-                    type="submit"
-                    class="button-primary"
-                    :disabled="loading"
-                >
-                    {{ loading ? 'Signing in…' : 'Sign in' }}
-                </button>
-            </form>
-        </div>
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form class="grid gap-5" @submit.prevent="login">
+                    <div class="grid gap-2">
+                        <Label for="email">Email</Label>
+                        <Input
+                            id="email"
+                            v-model="email"
+                            type="email"
+                            autocomplete="email"
+                            required
+                        />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="password">Password</Label>
+                        <PasswordInput
+                            id="password"
+                            v-model="password"
+                            autocomplete="current-password"
+                            required
+                        />
+                    </div>
+                    <p
+                        v-if="error"
+                        class="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+                        role="alert"
+                    >
+                        {{ error }}
+                    </p>
+                    <Button type="submit" class="w-full" :disabled="loading">
+                        <Spinner v-if="loading" />
+                        {{ loading ? 'Signing in…' : 'Sign in' }}
+                    </Button>
+                    <p class="text-center text-sm text-muted-foreground">
+                        Don’t have an account?
+                        <RouterLink
+                            to="/register"
+                            class="font-medium text-foreground underline underline-offset-4"
+                        >
+                            Create one
+                        </RouterLink>
+                    </p>
+                </form>
+            </CardContent>
+        </Card>
     </section>
 </template>

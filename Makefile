@@ -1,44 +1,48 @@
 .PHONY: setup db-up db-down dev migrate test test-file test-filter frontend-test lint analyse build fresh
 
 setup:
-	composer install
-	@if [ ! -f .env ]; then cp .env.example .env; php artisan key:generate; fi
-	npm install
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	docker run --rm -u "$$(id -u):$$(id -g)" -v "$$(pwd):/app" -w /app composer:2 composer install --no-interaction
+	./vendor/bin/sail build
+	./vendor/bin/sail up -d
+	@if ! grep -Eq '^APP_KEY=.+$$' .env; then ./vendor/bin/sail artisan key:generate --force; fi
+	./vendor/bin/sail composer install
+	./vendor/bin/sail npm install
 
 db-up:
-	docker compose up -d postgres
+	./vendor/bin/sail up -d pgsql
 
 db-down:
-	docker compose stop postgres
+	./vendor/bin/sail stop pgsql
 
 dev:
-	composer run dev
+	./vendor/bin/sail composer run dev
 
 migrate:
-	php artisan migrate
+	./vendor/bin/sail artisan migrate
 
 test:
-	php artisan test --compact
+	./vendor/bin/sail artisan test --compact
 
 test-file:
-	php artisan test --compact $(file)
+	./vendor/bin/sail artisan test --compact $(file)
 
 test-filter:
-	php artisan test --compact --filter=$(filter)
+	./vendor/bin/sail artisan test --compact --filter=$(filter)
 
 frontend-test:
-	npm run test
+	./vendor/bin/sail npm run test
 
 lint:
-	vendor/bin/pint --dirty --format agent
-	npm run lint
+	./vendor/bin/sail pint --dirty --format agent
+	./vendor/bin/sail npm run lint
 
 analyse:
-	vendor/bin/phpstan analyse
-	npm run types:check
+	./vendor/bin/sail bin phpstan analyse
+	./vendor/bin/sail npm run types:check
 
 build:
-	npm run build
+	./vendor/bin/sail npm run build
 
 fresh:
-	php artisan migrate:fresh --seed
+	./vendor/bin/sail artisan migrate:fresh --seed

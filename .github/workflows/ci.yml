@@ -49,7 +49,9 @@ jobs:
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup environment
-        run: cp .env.testing.example .env
+        run: |
+          cp .env.testing.example .env
+          echo "DB_HOST=127.0.0.1" >> "$GITHUB_ENV"
 
       - name: Create test database
         run: PGPASSWORD=virgosoft psql -h 127.0.0.1 -U virgosoft -d virgosoft -c 'CREATE DATABASE virgosoft_testing;'
