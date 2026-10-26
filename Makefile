@@ -3,12 +3,13 @@
 setup:
 	@if [ ! -f .env ]; then cp .env.example .env; fi
 	docker run --rm -u "$$(id -u):$$(id -g)" -v "$$(pwd):/app" -w /app composer:2 composer install --no-interaction
-	./vendor/bin/sail build
-	./vendor/bin/sail up -d
-	@if ! grep -Eq '^APP_KEY=.+$$' .env; then ./vendor/bin/sail artisan key:generate --force; fi
-	./vendor/bin/sail composer install
-	./vendor/bin/sail root-shell -c 'chown -R sail:sail /var/www/html/node_modules'
-	./vendor/bin/sail npm install
+	WWWUSER="$$(id -u)" WWWGROUP="$$(id -g)" ./vendor/bin/sail build
+	WWWUSER="$$(id -u)" WWWGROUP="$$(id -g)" ./vendor/bin/sail up -d
+	WWWUSER="$$(id -u)" WWWGROUP="$$(id -g)" ./vendor/bin/sail root-shell -c 'chown sail:sail /var/www/html/.env && mkdir -p /var/www/html/resources/js/actions /var/www/html/resources/js/routes /var/www/html/resources/js/wayfinder /var/www/html/public/build && chown -R sail:sail /var/www/html/vendor /var/www/html/resources/js/actions /var/www/html/resources/js/routes /var/www/html/resources/js/wayfinder /var/www/html/public/build /var/www/html/storage /var/www/html/bootstrap/cache'
+	@if ! grep -Eq '^APP_KEY=.+$$' .env; then WWWUSER="$$(id -u)" WWWGROUP="$$(id -g)" ./vendor/bin/sail artisan key:generate --force; fi
+	WWWUSER="$$(id -u)" WWWGROUP="$$(id -g)" ./vendor/bin/sail composer install
+	WWWUSER="$$(id -u)" WWWGROUP="$$(id -g)" ./vendor/bin/sail root-shell -c 'chown -R sail:sail /var/www/html/node_modules'
+	WWWUSER="$$(id -u)" WWWGROUP="$$(id -g)" ./vendor/bin/sail npm ci
 
 db-up:
 	./vendor/bin/sail up -d pgsql

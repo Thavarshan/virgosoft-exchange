@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 class SettleSeller
 {
     protected const USD_SCALE = 2;
+
     protected const ASSET_SCALE = 8;
 
     /**

@@ -3,7 +3,7 @@ import { Head, usePage } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import ConnectionBadge from '@/components/trading/ConnectionBadge.vue';
-import MarketSelect from '@/components/trading/MarketSelect.vue';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OrderBookPanel from '@/components/trading/OrderBookPanel.vue';
 import OrderHistoryPanel from '@/components/trading/OrderHistoryPanel.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -177,12 +177,23 @@ onUnmounted(() => {
                             Choose a symbol for the open orderbook.
                         </p>
                     </div>
-                    <MarketSelect
+                    <Tabs
                         :model-value="selectedSymbol"
-                        :markets="TRADING_MARKETS"
-                        aria-label="Orderbook market"
-                        @update:model-value="selectSymbol"
-                    />
+                        class="shrink-0"
+                        @update:model-value="
+                            selectSymbol($event as AssetSymbol)
+                        "
+                    >
+                        <TabsList aria-label="Orderbook market">
+                            <TabsTrigger
+                                v-for="market in TRADING_MARKETS"
+                                :key="market.symbol"
+                                :value="market.symbol"
+                            >
+                                {{ market.label }}
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
                 <OrderBookPanel
                     :symbol="selectedSymbol"

@@ -13,11 +13,12 @@ class DefaultUserSeeder extends Seeder
 
     public function __construct(
         protected readonly SeedDemoAccount $seedDemoAccount,
-    ) {
-    }
+    ) {}
 
     public const NAME = 'Demo Trader';
+
     public const EMAIL = 'demo@example.com';
+
     public const PASSWORD = 'password';
 
     /**

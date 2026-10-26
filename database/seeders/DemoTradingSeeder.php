@@ -13,11 +13,12 @@ class DemoTradingSeeder extends Seeder
 
     public function __construct(
         protected readonly SeedDemoAccount $seedDemoAccount,
-    ) {
-    }
+    ) {}
 
     public const NAME = 'Demo Counterparty';
+
     public const EMAIL = 'counterparty@example.com';
+
     public const PASSWORD = DefaultUserSeeder::PASSWORD;
 
     /**

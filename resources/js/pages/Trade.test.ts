@@ -105,6 +105,35 @@ describe('Trade page', () => {
         await flushPromises();
     });
 
+    it('keeps the selected market when switching order side', async () => {
+        await flushPromises();
+
+        const buyButton = wrapper.get(
+            '[aria-label="Order side"] [data-slot="toggle-group-item"][data-state="on"]',
+        );
+        const sellButton = wrapper.get(
+            '[aria-label="Order side"] [data-slot="toggle-group-item"][data-state="off"]',
+        );
+
+        expect(buyButton.attributes('data-variant')).toBe('outline');
+        expect(sellButton.attributes('data-variant')).toBe('outline');
+        expect(wrapper.get('#order-symbol').text()).toContain('BTC / USD');
+
+        await sellButton.trigger('click');
+
+        expect(
+            wrapper
+                .get(
+                    '[aria-label="Order side"] [data-slot="toggle-group-item"][data-state="on"]',
+                )
+                .text(),
+        ).toContain('Sell BTC');
+        expect(wrapper.get('#order-symbol').text()).toContain('BTC / USD');
+        expect(wrapper.get('label[for="order-amount"]').text()).toContain(
+            'Amount (BTC)',
+        );
+    });
+
     it('shows field validation while preserving failed input', async () => {
         placeOrder.mockRejectedValueOnce({
             response: {

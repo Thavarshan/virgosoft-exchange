@@ -19,18 +19,21 @@ defineProps<{
 const emit = defineEmits<{
     'update:modelValue': [value: AssetSymbol];
 }>();
+
+function updateMarket(value: unknown): void {
+    if (value === 'BTC' || value === 'ETH') {
+        emit('update:modelValue', value);
+    }
+}
 </script>
 
 <template>
-    <Select
-        :model-value="modelValue"
-        @update:model-value="emit('update:modelValue', $event as AssetSymbol)"
-    >
+    <Select :model-value="modelValue" @update:model-value="updateMarket">
         <SelectTrigger
             :id="id"
-            :aria-describedby="describedBy"
             :aria-label="ariaLabel"
-            class="w-full"
+            :aria-describedby="describedBy"
+            class="h-10 w-full"
         >
             <SelectValue placeholder="Select a market" />
         </SelectTrigger>

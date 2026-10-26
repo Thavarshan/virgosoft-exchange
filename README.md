@@ -179,8 +179,10 @@ the visible orderbook every 15 seconds. A dropped configured connection shows
 `Offline`; polling continues while the page is visible.
 
 The automated suite verifies private-channel ownership, event payloads,
-after-commit dispatch, rollback behavior, and concurrency. A real Pusher
-credential/browser check is still required to verify external delivery.
+after-commit dispatch, rollback behavior, and concurrency. On October 26,
+2026, both hosted-Pusher browser scenarios passed: two independent sessions
+received match notifications and updated balances and filled orders without
+reloading, and a disconnected buyer caught up after resubscribing.
 
 To verify delivery with the initial funded demo accounts, use separate browser
 profiles or a normal and private window; ordinary tabs share the login session.
@@ -272,11 +274,6 @@ Neither workflow resets the development database or exposes a reset route.
 Backend tests use PostgreSQL. Run `make db-up` first when the database is not
 running. The Compose init script creates `virgosoft_testing` alongside the
 development and E2E databases.
-
-See [docs/development-workflow.md](docs/development-workflow.md) for the
-test workflow, [docs/architecture.md](docs/architecture.md) for implementation
-decisions, and [docs/assessment-roadmap.md](docs/assessment-roadmap.md) for
-completed and remaining assessment scope.
 
 ## Troubleshooting
 

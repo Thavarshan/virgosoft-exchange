@@ -103,7 +103,7 @@ export async function submitOrder(
     },
 ): Promise<Response> {
     if (order.symbol && order.symbol !== 'BTC') {
-        await page.getByRole('combobox').click();
+        await page.getByRole('combobox', { name: 'Order market' }).click();
         await page
             .getByRole('option', { name: `${order.symbol} / USD` })
             .click();
@@ -148,6 +148,5 @@ export async function selectMarket(
     page: Page,
     symbol: 'BTC' | 'ETH',
 ): Promise<void> {
-    await page.getByRole('combobox').click();
-    await page.getByRole('option', { name: `${symbol} / USD` }).click();
+    await page.getByRole('tab', { name: `${symbol} / USD` }).click();
 }

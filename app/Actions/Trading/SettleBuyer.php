@@ -14,8 +14,7 @@ class SettleBuyer
         protected readonly CalculateCommission $calculateCommission,
         protected readonly CalculateOrderReservation $calculateOrderReservation,
         protected readonly CreditAsset $creditAsset,
-    ) {
-    }
+    ) {}
 
     /**
      * Settle the buyer's USD reservation and credit the purchased asset.

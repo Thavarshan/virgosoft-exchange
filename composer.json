@@ -55,7 +55,7 @@
         "lint:check": [
             "pint --parallel --test"
         ],
-        "ci:check": ["Composer\\Config::disableProcessTimeout", "npm run check", "npm run types:check", "npm run format:check", "npm run test", "@test"],
+        "ci:check": ["Composer\\Config::disableProcessTimeout", "@php artisan wayfinder:generate --with-form", "npm run check", "npm run types:check", "npm run format:check", "npm run test", "@test"],
         "types:check": [
             "phpstan analyse"
         ],

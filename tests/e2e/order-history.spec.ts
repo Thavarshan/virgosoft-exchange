@@ -32,8 +32,9 @@ test('filters owned order history without changing the orderbook market', async 
     await expect(historyTable).toContainText('ETH');
     await expect(historyTable).toContainText('Buy');
     await expect(historyTable).toContainText('Filled');
-    await expect(page.getByLabel('Orderbook market')).toContainText(
-        'BTC / USD',
+    await expect(page.getByRole('tab', { name: 'BTC / USD' })).toHaveAttribute(
+        'aria-selected',
+        'true',
     );
 
     await page.getByRole('button', { name: 'Clear filters' }).click();

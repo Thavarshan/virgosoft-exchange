@@ -25,8 +25,7 @@ final readonly class OrderFilter
         protected ?AssetSymbol $symbol = null,
         protected ?OrderSide $side = null,
         protected ?OrderStatus $status = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Build filter criteria from the already validated HTTP request.

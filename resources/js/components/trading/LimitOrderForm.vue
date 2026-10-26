@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import MarketSelect from '@/components/trading/MarketSelect.vue';
 import OrderPreview from '@/components/trading/OrderPreview.vue';
 import type { OrderPreview as Preview } from '@/lib/trading';
@@ -33,6 +34,12 @@ function errorFor(field: string): string | undefined {
     return props.validationErrors[field]?.[0];
 }
 
+function updateSide(value: unknown): void {
+    if (value === 'buy' || value === 'sell') {
+        emit('update:side', value);
+    }
+}
+
 function describedBy(hintId: string, field: string): string | undefined {
     return (
         [hintId, errorFor(field) ? field + '-error' : null]
@@ -57,6 +64,7 @@ const priceHint = computed(() =>
                     id="order-symbol"
                     :model-value="symbol"
                     :markets="markets"
+                    aria-label="Order market"
                     :described-by="
                         errorFor('symbol') ? 'order-symbol-error' : undefined
                     "
@@ -72,33 +80,32 @@ const priceHint = computed(() =>
             </div>
             <div class="space-y-2">
                 <Label>Side</Label>
-                <div
-                    class="grid grid-cols-2 gap-2"
-                    role="group"
+                <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    size="lg"
+                    :spacing="2"
+                    :model-value="side"
                     aria-label="Order side"
                     :aria-describedby="
                         errorFor('side') ? 'order-side-error' : undefined
                     "
+                    class="grid w-full grid-cols-2"
+                    @update:model-value="updateSide"
                 >
-                    <Button
-                        type="button"
-                        :variant="side === 'buy' ? 'default' : 'outline'"
-                        :aria-pressed="side === 'buy'"
-                        class="h-10 w-full"
-                        @click="emit('update:side', 'buy')"
+                    <ToggleGroupItem
+                        value="buy"
+                        class="h-10 w-full text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                     >
                         Buy {{ symbol }}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        :aria-pressed="side === 'sell'"
-                        class="h-10 w-full"
-                        @click="emit('update:side', 'sell')"
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                        value="sell"
+                        class="h-10 w-full text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                     >
                         Sell {{ symbol }}
-                    </Button>
-                </div>
+                    </ToggleGroupItem>
+                </ToggleGroup>
                 <p
                     v-if="errorFor('side')"
                     id="order-side-error"
