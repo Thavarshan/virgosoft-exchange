@@ -8,7 +8,7 @@ persisted trade records. The Inertia/Vue screens provide the live trading demo
 with limit-order placement, wallet/order history, orderbook polling, and
 private-channel updates when Pusher is configured.
 
-**Live demo:** <https://virgosoft-exchange-production-zspwz2.laravel.cloud>.
+**Live demo:** <https://virgosoft.thavarshan.com/>.
 The login page lists the two pre-funded demo accounts and fills the form for
 you.
 
@@ -432,6 +432,10 @@ organization, `us-east-1`) is configured for the lowest practical cost:
   Pusher), object storage, autoscaling, and extra environments.
 - **Deploys:** **Push to deploy is off** so nothing deploys without passing CI.
   The deploy hook is also off.
+- **Domain:** `virgosoft.thavarshan.com` is attached as a custom domain (DNS
+  through Cloudflare, certificate issued by Laravel Cloud). The environment's
+  `*.laravel.cloud` address keeps working. `APP_URL` is the custom domain, and
+  `SANCTUM_STATEFUL_DOMAINS` lists both hosts.
 
 The environment variables mirror `.env.example` for production
 (`APP_ENV=production`, database sessions, cache and queue, `BROADCAST_CONNECTION=pusher`,
