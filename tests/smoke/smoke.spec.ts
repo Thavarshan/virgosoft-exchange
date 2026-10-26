@@ -117,6 +117,22 @@ test.describe('deployed application', () => {
         await expect(
             page.getByRole('heading', { name: 'Dashboard' }),
         ).toBeVisible();
+
+        // The page shell is server-rendered; its data comes from the API.
+        await page.waitForLoadState('networkidle');
+        await expect(page.getByText('Dashboard unavailable')).toHaveCount(0);
+    });
+
+    test('the API accepts same-origin requests without a Referer', async () => {
+        const response = await page.request.get('/api/dashboard', {
+            headers: {
+                Accept: 'application/json',
+                'Sec-Fetch-Site': 'same-origin',
+            },
+        });
+
+        expect(response.status()).toBe(200);
+        expect((await response.json()).dashboard).toBeDefined();
     });
 
     test('the profile and orderbook APIs respond', async () => {
