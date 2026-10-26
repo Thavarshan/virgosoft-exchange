@@ -16,7 +16,8 @@ class AuthenticationTest extends FeatureTestCase
         $response->assertInertia(fn (Assert $page): Assert => $page
             ->component('auth/Login')
             ->where('canResetPassword', true)
-            ->where('status', null));
+            ->where('status', null)
+            ->has('demoAccounts', 0));
     }
 
     public function test_users_can_authenticate_with_fortify(): void

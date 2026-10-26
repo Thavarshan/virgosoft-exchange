@@ -123,4 +123,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Demo Accounts
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, the login page lists the shared demo credentials and the
+    | deploy step creates those accounts. The passwords are public by design,
+    | so only enable this for assessment and demonstration environments.
+    |
+    */
+
+    'demo_accounts' => (bool) env('DEMO_ACCOUNTS', false),
+
 ];

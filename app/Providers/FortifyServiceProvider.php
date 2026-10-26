@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Support\DemoAccounts;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -43,6 +44,9 @@ class FortifyServiceProvider extends ServiceProvider
             return Inertia::render('auth/Login', [
                 'canResetPassword' => Features::enabled(Features::resetPasswords()),
                 'status' => $request->session()->get('status'),
+                'demoAccounts' => DemoAccounts::enabled()
+                    ? DemoAccounts::all()
+                    : [],
             ]);
         });
 
