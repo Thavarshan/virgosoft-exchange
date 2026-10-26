@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
@@ -30,7 +30,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 
 <template>
     <div class="px-4 py-6">
-        <Heading
+        <PageHeader
             title="Settings"
             description="Manage your profile and account settings"
         />

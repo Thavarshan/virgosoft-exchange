@@ -1,66 +1,245 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+    push:
+        branches:
+            - main
+    pull_request:
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17
+    ci:
+        runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres:17
+                env:
+                    POSTGRES_USER: virgosoft
+                    POSTGRES_PASSWORD: virgosoft
+                    POSTGRES_DB: virgosoft
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+              with:
+                  php-version: '8.5'
+                  tools: composer:v2
+                  coverage: none
+
+            - name: Setup Node
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: '22'
+
+            - name: Setup Application
+              run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+            - name: Setup environment
+              run: |
+                  cp .env.testing.example .env
+                  echo "DB_HOST=127.0.0.1" >> "$GITHUB_ENV"
+
+            - name: Create test database
+              run: PGPASSWORD=virgosoft psql -h 127.0.0.1 -U virgosoft -d virgosoft -c 'CREATE DATABASE virgosoft_testing;'
+
+            - name: Generate application key and migrate
+              run: php artisan key:generate && php artisan migrate --force
+
+            - name: Install frontend dependencies
+              run: npm ci
+
+            - name: Run CI Checks
+              run: composer ci:check
+
+    e2e:
+        runs-on: ubuntu-latest
         env:
-          POSTGRES_USER: virgosoft
-          POSTGRES_PASSWORD: virgosoft
-          POSTGRES_DB: virgosoft
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+            APP_ENV: testing
+            APP_URL: http://127.0.0.1:8080
+            DB_CONNECTION: pgsql
+            DB_HOST: 127.0.0.1
+            DB_PORT: 5432
+            DB_DATABASE: virgosoft_e2e
+            DB_USERNAME: virgosoft
+            DB_PASSWORD: virgosoft
+            E2E_DB_DATABASE: virgosoft_e2e
+            BROADCAST_CONNECTION: pusher
+            CACHE_STORE: database
+            QUEUE_CONNECTION: database
+            SESSION_DRIVER: database
+            PUSHER_APP_ID: e2e-app
+            PUSHER_APP_KEY: e2e-key
+            PUSHER_APP_SECRET: e2e-secret
+            PUSHER_APP_CLUSTER: mt1
+            PUSHER_HOST: 127.0.0.1
+            PUSHER_PORT: 6001
+            PUSHER_SCHEME: http
+            VITE_PUSHER_APP_KEY: e2e-key
+            VITE_PUSHER_APP_CLUSTER: mt1
+            VITE_PUSHER_HOST: 127.0.0.1
+            VITE_PUSHER_PORT: 6001
+            VITE_PUSHER_SCHEME: http
+            VITE_E2E: 'true'
+        services:
+            postgres:
+                image: postgres:17
+                env:
+                    POSTGRES_USER: virgosoft
+                    POSTGRES_PASSWORD: virgosoft
+                    POSTGRES_DB: virgosoft
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
-        with:
-          php-version: '8.5'
-          tools: composer:v2
-          coverage: none
+            - name: Setup PHP
+              uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+              with:
+                  php-version: '8.5'
+                  tools: composer:v2
+                  coverage: none
 
-      - name: Setup Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
+            - name: Setup Node
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: '22'
 
-      - name: Setup Application
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+            - name: Install application dependencies
+              run: |
+                  composer install --no-interaction --prefer-dist --optimize-autoloader
+                  npm ci
 
-      - name: Setup environment
-        run: |
-          cp .env.testing.example .env
-          echo "DB_HOST=127.0.0.1" >> "$GITHUB_ENV"
+            - name: Configure isolated E2E environment
+              run: |
+                  cp .env.testing.example .env
+                  php artisan key:generate --force
+                  sed -i -E 's|^APP_URL=.*|APP_URL=http://127.0.0.1:8080|' .env
+                  sed -i -E 's|^DB_HOST=.*|DB_HOST=127.0.0.1|' .env
+                  sed -i -E 's|^DB_DATABASE=.*|DB_DATABASE=virgosoft_e2e|' .env
+                  sed -i -E 's|^BROADCAST_CONNECTION=.*|BROADCAST_CONNECTION=pusher|' .env
+                  sed -i -E 's|^QUEUE_CONNECTION=.*|QUEUE_CONNECTION=database|' .env
+                  sed -i -E 's|^SESSION_DRIVER=.*|SESSION_DRIVER=database|' .env
+                  sed -i -E 's|^CACHE_STORE=.*|CACHE_STORE=database|' .env
+                  sed -i -E 's|^PUSHER_APP_ID=.*|PUSHER_APP_ID=e2e-app|' .env
+                  sed -i -E 's|^PUSHER_APP_KEY=.*|PUSHER_APP_KEY=e2e-key|' .env
+                  sed -i -E 's|^PUSHER_APP_SECRET=.*|PUSHER_APP_SECRET=e2e-secret|' .env
+                  sed -i -E 's|^PUSHER_APP_CLUSTER=.*|PUSHER_APP_CLUSTER=mt1|' .env
+                  sed -i -E 's|^VITE_PUSHER_APP_KEY=.*|VITE_PUSHER_APP_KEY=e2e-key|' .env
+                  sed -i -E 's|^VITE_PUSHER_APP_CLUSTER=.*|VITE_PUSHER_APP_CLUSTER=mt1|' .env
+                  sed -i -E 's|^VITE_PUSHER_HOST=.*|VITE_PUSHER_HOST=127.0.0.1|' .env
+                  sed -i -E 's|^VITE_PUSHER_PORT=.*|VITE_PUSHER_PORT=6001|' .env
+                  sed -i -E 's|^VITE_PUSHER_SCHEME=.*|VITE_PUSHER_SCHEME=http|' .env
+                  cat >> .env <<'EOF'
+                  PUSHER_APP_ID=e2e-app
+                  PUSHER_APP_KEY=e2e-key
+                  PUSHER_APP_SECRET=e2e-secret
+                  PUSHER_APP_CLUSTER=mt1
+                  PUSHER_HOST=127.0.0.1
+                  PUSHER_PORT=6001
+                  PUSHER_SCHEME=http
+                  VITE_PUSHER_APP_KEY=e2e-key
+                  VITE_PUSHER_APP_CLUSTER=mt1
+                  VITE_PUSHER_HOST=127.0.0.1
+                  VITE_PUSHER_PORT=6001
+                  VITE_PUSHER_SCHEME=http
+                  EOF
 
-      - name: Create test database
-        run: PGPASSWORD=virgosoft psql -h 127.0.0.1 -U virgosoft -d virgosoft -c 'CREATE DATABASE virgosoft_testing;'
+            - name: Create E2E database
+              run: |
+                  if ! PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USERNAME" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_DATABASE'" | grep -q 1; then
+                    PGPASSWORD="$DB_PASSWORD" createdb -h "$DB_HOST" -U "$DB_USERNAME" "$DB_DATABASE"
+                  fi
 
-      - name: Generate application key and migrate
-        run: php artisan key:generate && php artisan migrate --force
+            - name: Migrate and seed E2E database
+              run: npm run e2e:prepare
 
-      - name: Install frontend dependencies
-        run: npm ci
+            - name: Build frontend assets
+              run: npm run build
 
-      - name: Run CI Checks
-        run: composer ci:check
+            - name: Install Playwright browsers
+              run: npx playwright install --with-deps chromium webkit
+
+            - name: Check browser-test types
+              run: npm run types:e2e
+
+            - name: Start local Pusher-compatible server
+              run: |
+                  docker run --detach --name soketi --publish 6001:6001 \
+                    --env SOKETI_DEFAULT_APP_ID=e2e-app \
+                    --env SOKETI_DEFAULT_APP_KEY=e2e-key \
+                    --env SOKETI_DEFAULT_APP_SECRET=e2e-secret \
+                    quay.io/soketi/soketi:1.4-16-debian
+                  for attempt in $(seq 1 30); do
+                    if curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:6001 | grep -Eq '^[2-5]'; then
+                      exit 0
+                    fi
+                    sleep 1
+                  done
+                  docker logs soketi
+                  exit 1
+
+            - name: Start queue worker
+              run: |
+                  php artisan queue:work --tries=1 --timeout=120 > storage/logs/e2e-queue.log 2>&1 &
+                  echo $! > storage/logs/e2e-queue.pid
+
+            - name: Run browser tests
+              run: npm run test:e2e
+
+            - name: Upload browser and server artifacts
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+              with:
+                  name: e2e-artifacts
+                  path: |
+                      playwright-report/
+                      test-results/
+                      storage/logs/e2e-*.log
+                  if-no-files-found: ignore
+
+    sail-setup:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Run the documented Sail setup
+              run: make setup
+
+            - name: Verify the fresh Sail application
+              run: |
+                  ./vendor/bin/sail artisan migrate --force
+                  ./vendor/bin/sail artisan test --compact
+                  ./vendor/bin/sail npm run test
+                  ./vendor/bin/sail npm run build
+
+            - name: Stop Sail services
+              if: always()
+              run: ./vendor/bin/sail down --volumes --remove-orphans

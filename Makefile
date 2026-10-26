@@ -7,6 +7,7 @@ setup:
 	./vendor/bin/sail up -d
 	@if ! grep -Eq '^APP_KEY=.+$$' .env; then ./vendor/bin/sail artisan key:generate --force; fi
 	./vendor/bin/sail composer install
+	./vendor/bin/sail root-shell -c 'chown -R sail:sail /var/www/html/node_modules'
 	./vendor/bin/sail npm install
 
 db-up:

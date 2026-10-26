@@ -1,9 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/*
-  ---break---
-*/
-
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
@@ -15,7 +9,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-sans: 'Inter Variable', sans-serif;
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -48,6 +42,17 @@
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
+
+    --color-buy: var(--buy);
+    --color-buy-foreground: var(--buy-foreground);
+    --color-sell: var(--sell);
+    --color-sell-foreground: var(--sell-foreground);
+    --color-status-open: var(--status-open);
+    --color-status-open-foreground: var(--status-open-foreground);
+    --color-status-filled: var(--status-filled);
+    --color-status-filled-foreground: var(--status-filled-foreground);
+    --color-status-cancelled: var(--status-cancelled);
+    --color-status-cancelled-foreground: var(--status-cancelled-foreground);
 
     --color-chart-1: var(--chart-1);
     --color-chart-2: var(--chart-2);
@@ -94,65 +99,6 @@
     [role='button']:not(:disabled) {
         cursor: pointer;
     }
-    button:not(:disabled),
-    [role='button']:not(:disabled) {
-        cursor: pointer;
-    }
-}
-
-@layer components {
-    .eyebrow {
-        @apply text-xs font-semibold tracking-[0.18em] text-emerald-600 uppercase dark:text-emerald-400;
-    }
-    .page-title {
-        @apply mt-2 text-3xl font-semibold tracking-tight;
-    }
-    .page-subtitle {
-        @apply mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400;
-    }
-    .panel {
-        @apply rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900;
-    }
-    .panel-title {
-        @apply text-base font-semibold;
-    }
-    .panel-copy {
-        @apply mt-1 text-sm text-slate-500 dark:text-slate-400;
-    }
-    .field-label {
-        @apply text-sm font-medium;
-    }
-    .field {
-        @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm transition outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-800;
-    }
-    .button-primary {
-        @apply rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50;
-    }
-    .button-secondary {
-        @apply rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200;
-    }
-    .button-ghost {
-        @apply rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800;
-    }
-    .status-badge {
-        @apply rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300;
-    }
-    .empty-state {
-        @apply rounded-xl border border-dashed border-slate-200 px-5 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400;
-    }
-    .skeleton-line {
-        @apply h-3 animate-pulse rounded-full bg-slate-100 dark:bg-slate-800;
-    }
-}
-
-@layer utilities {
-    body,
-    html {
-        --font-sans:
-            'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-            'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-            'Noto Color Emoji';
-    }
 }
 
 :root {
@@ -175,6 +121,16 @@
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
+    --buy: oklch(0.57 0.17 160);
+    --buy-foreground: oklch(0.39 0.12 160);
+    --sell: oklch(0.62 0.19 15);
+    --sell-foreground: oklch(0.48 0.16 15);
+    --status-open: oklch(0.82 0.16 85);
+    --status-open-foreground: oklch(0.42 0.12 65);
+    --status-filled: oklch(0.57 0.17 160);
+    --status-filled-foreground: oklch(0.39 0.12 160);
+    --status-cancelled: oklch(0.82 0.02 260);
+    --status-cancelled-foreground: oklch(0.45 0.03 260);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -212,6 +168,16 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
+    --buy: oklch(0.72 0.15 160);
+    --buy-foreground: oklch(0.83 0.12 160);
+    --sell: oklch(0.73 0.16 15);
+    --sell-foreground: oklch(0.83 0.13 15);
+    --status-open: oklch(0.77 0.15 85);
+    --status-open-foreground: oklch(0.86 0.11 85);
+    --status-filled: oklch(0.72 0.15 160);
+    --status-filled-foreground: oklch(0.83 0.12 160);
+    --status-cancelled: oklch(0.45 0.03 260);
+    --status-cancelled-foreground: oklch(0.78 0.03 260);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);

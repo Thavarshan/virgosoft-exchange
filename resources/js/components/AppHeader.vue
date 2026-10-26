@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from '@lucide/vue';
+import {
+    ChartCandlestick,
+    LayoutGrid,
+    Menu,
+    Search,
+    WalletCards,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
@@ -35,7 +41,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
-import { dashboard } from '@/routes';
+import { dashboard, trade, wallet } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -59,20 +65,19 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+        title: 'Limit Order',
+        href: trade(),
+        icon: ChartCandlestick,
+    },
+    {
+        title: 'Orders & Wallet',
+        href: wallet(),
+        icon: WalletCards,
+    },
 ];
 
-const rightNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-];
+const rightNavItems: NavItem[] = [];
 </script>
 
 <template>
@@ -87,6 +92,7 @@ const rightNavItems: NavItem[] = [
                                 variant="ghost"
                                 size="icon"
                                 class="mr-2 h-9 w-9"
+                            data-test="mobile-nav-trigger"
                             >
                                 <Menu class="h-5 w-5" />
                             </Button>
@@ -244,6 +250,7 @@ const rightNavItems: NavItem[] = [
                                 variant="ghost"
                                 size="icon"
                                 class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
+                                data-test="header-user-menu"
                             >
                                 <Avatar
                                     class="size-8 overflow-hidden rounded-full"
