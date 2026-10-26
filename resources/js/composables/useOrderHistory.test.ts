@@ -24,21 +24,29 @@ function order(id: number): TradingOrder {
     };
 }
 
-function history(...ids: number[]): OrderHistoryResponse {
+function historyPage(
+    ids: number[],
+    currentPage = 1,
+    total = ids.length,
+): OrderHistoryResponse {
     return {
         orders: ids.map((id) => order(id)),
         links: { first: null, last: null, prev: null, next: null },
         meta: {
-            current_page: 1,
+            current_page: currentPage,
+            last_page: Math.max(1, Math.ceil(total / 20)),
             from: ids.length > 0 ? 1 : null,
-            last_page: 1,
             links: [],
             path: '/api/profile/orders',
             per_page: 20,
             to: ids.length > 0 ? ids.length : null,
-            total: ids.length,
+            total,
         },
     };
+}
+
+function history(...ids: number[]): OrderHistoryResponse {
+    return historyPage(ids);
 }
 
 describe('useOrderHistory', () => {
@@ -112,13 +120,63 @@ describe('useOrderHistory', () => {
 
         const pageTwoRequest = state.loadHistory(2);
         const pageThreeRequest = state.loadHistory(3);
-        resolvePageThree(history(3));
+        resolvePageThree(historyPage([3], 3, 41));
         await pageThreeRequest;
         resolvePageTwo(history(2));
         await pageTwoRequest;
 
-        expect(fetchOrderHistory).toHaveBeenNthCalledWith(2, 2);
-        expect(fetchOrderHistory).toHaveBeenNthCalledWith(3, 3);
+        expect(fetchOrderHistory).toHaveBeenNthCalledWith(2, 2, {});
+        expect(fetchOrderHistory).toHaveBeenNthCalledWith(3, 3, {});
         expect(state.orders.value.map(({ id }) => id)).toEqual([3]);
+    });
+
+    it('resets to page one and ignores stale filter responses', async () => {
+        fetchOrderHistory.mockResolvedValueOnce(history(1));
+        await state.loadHistory();
+
+        let resolveBtc: (value: OrderHistoryResponse) => void = () => {};
+        let resolveEth: (value: OrderHistoryResponse) => void = () => {};
+        fetchOrderHistory.mockReturnValueOnce(
+            new Promise<OrderHistoryResponse>((resolve) => {
+                resolveBtc = resolve;
+            }),
+        );
+        fetchOrderHistory.mockReturnValueOnce(
+            new Promise<OrderHistoryResponse>((resolve) => {
+                resolveEth = resolve;
+            }),
+        );
+
+        const btcRequest = state.setFilters({ symbol: 'BTC' });
+        expect(state.orders.value).toEqual([]);
+        const ethRequest = state.setFilters({ symbol: 'ETH' });
+
+        resolveEth(history(3));
+        await ethRequest;
+        resolveBtc(history(2));
+        await btcRequest;
+
+        expect(fetchOrderHistory).toHaveBeenNthCalledWith(2, 1, {
+            symbol: 'BTC',
+        });
+        expect(fetchOrderHistory).toHaveBeenNthCalledWith(3, 1, {
+            symbol: 'ETH',
+        });
+        expect(state.orders.value.map(({ id }) => id)).toEqual([3]);
+    });
+
+    it('falls back once when the requested last page disappears', async () => {
+        fetchOrderHistory.mockResolvedValueOnce(history(1, 1, 21));
+        await state.loadHistory();
+
+        fetchOrderHistory.mockResolvedValueOnce(historyPage([], 2, 20));
+        fetchOrderHistory.mockResolvedValueOnce(historyPage([99], 1, 20));
+
+        await state.loadHistory(2);
+
+        expect(fetchOrderHistory).toHaveBeenNthCalledWith(2, 2, {});
+        expect(fetchOrderHistory).toHaveBeenNthCalledWith(3, 1, {});
+        expect(state.pagination.value?.current_page).toBe(1);
+        expect(state.orders.value.map(({ id }) => id)).toEqual([99]);
     });
 });

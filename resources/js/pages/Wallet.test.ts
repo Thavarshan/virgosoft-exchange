@@ -140,7 +140,7 @@ describe('Wallet page', () => {
         await flushPromises();
 
         expect(cancelOrder).toHaveBeenCalledWith(1);
-        expect(fetchOrderHistory).toHaveBeenLastCalledWith(1);
+        expect(fetchOrderHistory).toHaveBeenLastCalledWith(1, {});
         expect(toastSuccess).toHaveBeenCalledWith('Order cancelled', {
             description: 'The reservation has been returned to your wallet.',
         });
@@ -171,8 +171,39 @@ describe('Wallet page', () => {
             ?.click();
         await flushPromises();
 
-        expect(fetchOrderHistory).toHaveBeenLastCalledWith(2);
+        expect(fetchOrderHistory).toHaveBeenLastCalledWith(2, {});
         expect(wrapper.text()).toContain('Order is no longer open.');
+    });
+
+    it('resets filtered history to page one and preserves filters on cancellation', async () => {
+        await flushPromises();
+        fetchOrderHistory.mockClear();
+        fetchOrderHistory.mockResolvedValueOnce(history([order(1)]));
+
+        wrapper.findComponent(OrderHistoryPanel).vm.$emit('filters', {
+            symbol: 'BTC',
+            side: 'buy',
+        });
+        await flushPromises();
+
+        cancelOrder.mockResolvedValueOnce({
+            order: { ...order(1), status: 3 },
+        });
+        fetchOrderHistory.mockResolvedValueOnce(history([order(1)]));
+
+        const cancelButton = wrapper
+            .findAll('button')
+            .find((button) => button.text().trim() === 'Cancel');
+        await cancelButton?.trigger('click');
+        document
+            .querySelector<HTMLButtonElement>('[data-test="confirm-cancel"]')
+            ?.click();
+        await flushPromises();
+
+        expect(fetchOrderHistory).toHaveBeenLastCalledWith(1, {
+            symbol: 'BTC',
+            side: 'buy',
+        });
     });
 
     it('pauses polling while hidden and removes polling and listeners on unmount', async () => {

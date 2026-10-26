@@ -36,7 +36,12 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import type { OrderHistoryResponse, TradingOrder } from '@/types/trading';
+import OrderHistoryFilters from '@/components/trading/OrderHistoryFilters.vue';
+import type {
+    OrderHistoryFilters as HistoryFilters,
+    OrderHistoryResponse,
+    TradingOrder,
+} from '@/types/trading';
 import { formatDateTime } from '@/lib/trading';
 import OrderSideBadge from '@/components/trading/OrderSideBadge.vue';
 import OrderStatusBadge from '@/components/trading/OrderStatusBadge.vue';
@@ -49,17 +54,31 @@ const props = withDefaults(
         refreshing?: boolean;
         cancellingOrderIds: ReadonlySet<number>;
         error: string | null;
+        filters?: HistoryFilters;
     }>(),
-    { refreshing: false },
+    { refreshing: false, filters: () => ({}) },
 );
 
 const emit = defineEmits<{
     cancel: [orderId: number];
     page: [page: number];
+    filters: [filters: HistoryFilters];
 }>();
 
 const orderToCancel = ref<TradingOrder | null>(null);
 const pageCount = computed(() => props.pagination?.last_page ?? 1);
+const hasActiveFilters = computed(() =>
+    Boolean(
+        props.filters.symbol !== undefined ||
+        props.filters.side !== undefined ||
+        props.filters.status !== undefined,
+    ),
+);
+const totalLabel = computed(() =>
+    hasActiveFilters.value
+        ? `${props.pagination?.total ?? 0} matching orders`
+        : `${props.pagination?.total ?? 0} total`,
+);
 
 function openCancelConfirmation(order: TradingOrder): void {
     orderToCancel.value = order;
@@ -96,13 +115,16 @@ function isCancelling(orderId: number): boolean {
                         class="text-xs text-muted-foreground"
                         >Refreshing…</span
                     >
-                    <Badge variant="outline"
-                        >{{ pagination.total }} total</Badge
-                    >
+                    <Badge variant="outline">{{ totalLabel }}</Badge>
                 </div>
             </CardAction>
         </CardHeader>
         <CardContent>
+            <OrderHistoryFilters
+                :model-value="filters"
+                @update:model-value="emit('filters', $event)"
+            />
+
             <Alert v-if="error" variant="destructive" class="mb-4">
                 <AlertDescription>{{ error }}</AlertDescription>
             </Alert>
@@ -115,9 +137,20 @@ function isCancelling(orderId: number): boolean {
                 v-else-if="orders.length === 0 && !error"
                 class="rounded-lg border border-dashed border-border p-8 text-center"
             >
-                <p class="font-medium">No orders yet</p>
+                <p class="font-medium">
+                    {{
+                        hasActiveFilters
+                            ? 'No orders match these filters'
+                            : 'No orders yet'
+                    }}
+                </p>
                 <p class="mt-1 text-sm text-muted-foreground">
-                    Place your first limit order to see it here.
+                    <template v-if="hasActiveFilters">
+                        Try clearing a filter to see more of your history.
+                    </template>
+                    <template v-else>
+                        Place your first limit order to see it here.
+                    </template>
                 </p>
             </div>
 
@@ -178,7 +211,7 @@ function isCancelling(orderId: number): boolean {
                     </div>
                 </div>
 
-                <Table class="hidden md:table">
+                <Table data-test="order-history-table" class="hidden md:table">
                     <TableHeader>
                         <TableRow>
                             <TableHead>Side</TableHead>

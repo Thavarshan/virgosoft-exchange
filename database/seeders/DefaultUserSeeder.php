@@ -12,13 +12,12 @@ class DefaultUserSeeder extends Seeder
     use WithoutModelEvents;
 
     public function __construct(
-        private readonly SeedDemoAccount $seedDemoAccount,
-    ) {}
+        protected readonly SeedDemoAccount $seedDemoAccount,
+    ) {
+    }
 
     public const NAME = 'Demo Trader';
-
     public const EMAIL = 'demo@example.com';
-
     public const PASSWORD = 'password';
 
     /**

@@ -8,13 +8,14 @@ use Illuminate\Validation\ValidationException;
 
 class SettleBuyer
 {
-    private const USD_SCALE = 2;
+    protected const USD_SCALE = 2;
 
     public function __construct(
-        private readonly CalculateCommission $calculateCommission,
-        private readonly CalculateOrderReservation $calculateOrderReservation,
-        private readonly CreditAsset $creditAsset,
-    ) {}
+        protected readonly CalculateCommission $calculateCommission,
+        protected readonly CalculateOrderReservation $calculateOrderReservation,
+        protected readonly CreditAsset $creditAsset,
+    ) {
+    }
 
     /**
      * Settle the buyer's USD reservation and credit the purchased asset.

@@ -17,7 +17,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-#[Signature('e2e:prepare {--reset : Truncate the existing schema instead of migrating it} {--activity : Add deterministic historical dashboard activity}')]
+#[Signature('e2e:prepare {--reset : Truncate the existing schema instead of migrating it} {--activity : Add deterministic historical dashboard activity} {--history : Add deterministic order-history fixtures}')]
 #[Description('Reset the isolated end-to-end test database')]
 class PrepareE2eDatabase extends Command
 {
@@ -53,6 +53,10 @@ class PrepareE2eDatabase extends Command
 
             if ($this->option('activity')) {
                 $this->seedHistoricalActivity();
+            }
+
+            if ($this->option('history')) {
+                $this->seedOrderHistory();
             }
 
             return self::SUCCESS;
@@ -95,6 +99,32 @@ class PrepareE2eDatabase extends Command
         foreach ([0, 1] as $offset) {
             $this->createHistoricalTrade($buyer, $seller, $start->addDays($offset));
         }
+    }
+
+    /**
+     * Add owned orders covering the history filters and a second page.
+     */
+    protected function seedOrderHistory(): void
+    {
+        $user = User::query()
+            ->where('email', DefaultUserSeeder::EMAIL)
+            ->firstOrFail();
+
+        Order::factory()->count(21)->for($user)->create([
+            'symbol' => AssetSymbol::BTC,
+            'side' => OrderSide::SELL,
+            'status' => OrderStatus::OPEN,
+        ]);
+        Order::factory()->for($user)->create([
+            'symbol' => AssetSymbol::ETH,
+            'side' => OrderSide::BUY,
+            'status' => OrderStatus::FILLED,
+        ]);
+        Order::factory()->for($user)->create([
+            'symbol' => AssetSymbol::BTC,
+            'side' => OrderSide::BUY,
+            'status' => OrderStatus::CANCELLED,
+        ]);
     }
 
     /**

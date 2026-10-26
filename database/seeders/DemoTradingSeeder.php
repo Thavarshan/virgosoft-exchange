@@ -12,13 +12,12 @@ class DemoTradingSeeder extends Seeder
     use WithoutModelEvents;
 
     public function __construct(
-        private readonly SeedDemoAccount $seedDemoAccount,
-    ) {}
+        protected readonly SeedDemoAccount $seedDemoAccount,
+    ) {
+    }
 
     public const NAME = 'Demo Counterparty';
-
     public const EMAIL = 'counterparty@example.com';
-
     public const PASSWORD = DefaultUserSeeder::PASSWORD;
 
     /**

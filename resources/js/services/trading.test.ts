@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from './api';
-import { cancelOrder, placeOrder } from './trading';
+import { cancelOrder, fetchOrderHistory, placeOrder } from './trading';
 
 describe('trading API service', () => {
     beforeEach(() => {
@@ -35,5 +35,38 @@ describe('trading API service', () => {
         await cancelOrder(42);
 
         expect(request).toHaveBeenCalledWith('/orders/42/cancel');
+    });
+
+    it('omits all-history sentinel values from the request', async () => {
+        const request = vi.spyOn(apiClient, 'get').mockResolvedValue({
+            data: {},
+        } as never);
+
+        await fetchOrderHistory(1, {});
+
+        expect(request).toHaveBeenCalledWith('/profile/orders', {
+            params: { page: 1 },
+        });
+    });
+
+    it('sends selected history filters with numeric status', async () => {
+        const request = vi.spyOn(apiClient, 'get').mockResolvedValue({
+            data: {},
+        } as never);
+
+        await fetchOrderHistory(2, {
+            symbol: 'ETH',
+            side: 'sell',
+            status: 3,
+        });
+
+        expect(request).toHaveBeenCalledWith('/profile/orders', {
+            params: {
+                page: 2,
+                symbol: 'ETH',
+                side: 'sell',
+                status: 3,
+            },
+        });
     });
 });

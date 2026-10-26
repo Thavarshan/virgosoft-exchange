@@ -85,7 +85,9 @@ endpoints; guests receive `401` responses.
 - `GET /api/session` — current authenticated user.
 - `GET /api/profile` — current USD and asset balances.
 - `GET /api/profile/orders` — the user’s complete order history,
-  20 per page.
+  20 per page. Optional `symbol=BTC|ETH`, `side=buy|sell`, and
+  `status=1|2|3` filters combine with AND; `page` selects a page and all
+  active filters are preserved in pagination links.
 - `GET /api/orders?symbol=BTC` — shared open orderbook.
 - `POST /api/orders` — place a buy or sell order and reserve funds.
 - `POST /api/orders/{order}/cancel` — cancel an owned open order and release

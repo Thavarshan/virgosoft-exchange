@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
 
 class BuildDashboard
 {
-    private const REPORTING_TIMEZONE = 'UTC';
+    protected const REPORTING_TIMEZONE = 'UTC';
 
     /**
      * Build dashboard data without loading the user's complete history.
@@ -103,7 +103,7 @@ class BuildDashboard
             ->whereBetween('trades.created_at', [$start, $end->subMicrosecond()])
             ->selectRaw(
                 'DATE(trades.created_at) AS activity_date, '
-                .'COALESCE(SUM(trade_value), 0)::numeric(20, 2) AS total',
+                . 'COALESCE(SUM(trade_value), 0)::numeric(20, 2) AS total',
             )
             ->groupByRaw('DATE(trades.created_at)')
             ->get();

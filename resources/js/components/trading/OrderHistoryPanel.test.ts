@@ -115,4 +115,21 @@ describe('OrderHistoryPanel', () => {
         expect(wrapper.text()).toContain('History request failed');
         expect(wrapper.text()).not.toContain('No orders yet');
     });
+
+    it('distinguishes an empty filtered result from an empty history', () => {
+        const wrapper = mount(OrderHistoryPanel, {
+            props: {
+                orders: [],
+                pagination: pagination(0),
+                loading: false,
+                cancellingOrderIds: new Set<number>(),
+                error: null,
+                filters: { symbol: 'ETH' },
+            },
+        });
+
+        expect(wrapper.text()).toContain('No orders match these filters');
+        expect(wrapper.text()).not.toContain('No orders yet');
+        expect(wrapper.text()).toContain('Clear filters');
+    });
 });

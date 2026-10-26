@@ -17,6 +17,12 @@ export type OrderSide = 'buy' | 'sell';
 
 export type OrderStatus = 1 | 2 | 3;
 
+export type OrderHistoryFilters = {
+    symbol?: AssetSymbol;
+    side?: OrderSide;
+    status?: OrderStatus;
+};
+
 export type AssetBalance = {
     symbol: AssetSymbol;
     amount: DecimalString;
@@ -100,4 +106,9 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
     1: 'Open',
     2: 'Filled',
     3: 'Cancelled',
+};
+
+export const ORDER_SIDE_LABELS: Record<OrderSide, string> = {
+    buy: 'Buy',
+    sell: 'Sell',
 };

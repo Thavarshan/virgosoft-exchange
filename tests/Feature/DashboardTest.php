@@ -172,7 +172,7 @@ class DashboardTest extends FeatureTestCase
     /**
      * @param  array<string, mixed>  $attributes
      */
-    private function createTrade(
+    protected function createTrade(
         User $buyer,
         User $seller,
         array $attributes,

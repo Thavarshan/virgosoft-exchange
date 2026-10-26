@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Trading;
 
+use App\Enums\AssetSymbol;
+use App\Enums\OrderSide;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\FeatureTestCase;
 
 class OrderHistoryTest extends FeatureTestCase
@@ -126,5 +129,182 @@ class OrderHistoryTest extends FeatureTestCase
         $secondPage->assertOk();
         $secondPage->assertJsonCount(1, 'orders');
         $secondPage->assertJsonPath('meta.current_page', 2);
+    }
+
+    public function test_order_history_filters_by_symbol(): void
+    {
+        $user = User::factory()->create();
+        $btcOrder = Order::factory()->for($user)->create([
+            'symbol' => AssetSymbol::BTC,
+        ]);
+        Order::factory()->for($user)->create([
+            'symbol' => AssetSymbol::ETH,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/profile/orders?symbol=BTC');
+
+        $response->assertOk();
+        $response->assertJsonPath('orders.0.id', $btcOrder->id);
+        $response->assertJsonCount(1, 'orders');
+        $response->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_order_history_filters_by_side(): void
+    {
+        $user = User::factory()->create();
+        $sellOrder = Order::factory()->for($user)->create([
+            'side' => OrderSide::SELL,
+        ]);
+        Order::factory()->for($user)->create([
+            'side' => OrderSide::BUY,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/profile/orders?side=sell');
+
+        $response->assertOk();
+        $response->assertJsonPath('orders.0.id', $sellOrder->id);
+        $response->assertJsonCount(1, 'orders');
+        $response->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_order_history_filters_by_status(): void
+    {
+        $user = User::factory()->create();
+        $filledOrder = Order::factory()->for($user)->create([
+            'status' => OrderStatus::FILLED,
+        ]);
+        Order::factory()->for($user)->create([
+            'status' => OrderStatus::OPEN,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/profile/orders?status=2');
+
+        $response->assertOk();
+        $response->assertJsonPath('orders.0.id', $filledOrder->id);
+        $response->assertJsonCount(1, 'orders');
+        $response->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_order_history_combines_symbol_side_and_status_filters(): void
+    {
+        $user = User::factory()->create();
+        $matchingOrder = Order::factory()->for($user)->create([
+            'symbol' => AssetSymbol::ETH,
+            'side' => OrderSide::SELL,
+            'status' => OrderStatus::CANCELLED,
+        ]);
+        Order::factory()->for($user)->create([
+            'symbol' => AssetSymbol::ETH,
+            'side' => OrderSide::SELL,
+            'status' => OrderStatus::OPEN,
+        ]);
+        Order::factory()->for($user)->create([
+            'symbol' => AssetSymbol::ETH,
+            'side' => OrderSide::BUY,
+            'status' => OrderStatus::CANCELLED,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/profile/orders?symbol=ETH&side=sell&status=3');
+
+        $response->assertOk();
+        $response->assertJsonPath('orders.0.id', $matchingOrder->id);
+        $response->assertJsonCount(1, 'orders');
+        $response->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_order_history_filters_before_pagination(): void
+    {
+        $user = User::factory()->create();
+        Order::factory()->count(10)->for($user)->create([
+            'symbol' => AssetSymbol::ETH,
+        ]);
+        $btcOrders = Order::factory()->count(20)->for($user)->create([
+            'symbol' => AssetSymbol::BTC,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/profile/orders?symbol=BTC');
+
+        $response->assertOk();
+        $response->assertJsonCount(20, 'orders');
+        $response->assertJsonPath('meta.total', 20);
+        $response->assertJsonPath('orders.0.id', $btcOrders->last()->id);
+    }
+
+    public function test_order_history_preserves_filters_in_pagination_links(): void
+    {
+        $user = User::factory()->create();
+        Order::factory()->count(21)->for($user)->create([
+            'symbol' => AssetSymbol::BTC,
+            'side' => OrderSide::SELL,
+            'status' => OrderStatus::OPEN,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/profile/orders?symbol=BTC&side=sell&status=1');
+
+        $response->assertOk();
+        $this->assertStringContainsString(
+            'symbol=BTC',
+            (string) $response->json('links.next'),
+        );
+        $this->assertStringContainsString(
+            'side=sell',
+            (string) $response->json('links.next'),
+        );
+        $this->assertStringContainsString(
+            'status=1',
+            (string) $response->json('links.next'),
+        );
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidHistoryFilters(): array
+    {
+        return [
+            'unsupported symbol' => ['symbol=DOGE'],
+            'unsupported side' => ['side=hold'],
+            'unsupported status' => ['status=4'],
+            'invalid page' => ['page=0'],
+        ];
+    }
+
+    #[DataProvider('invalidHistoryFilters')]
+    public function test_invalid_order_history_filters_return_validation_errors(
+        string $query,
+    ): void {
+        $response = $this->actingAs(User::factory()->create())
+            ->getJson("/api/profile/orders?{$query}");
+
+        $response->assertUnprocessable();
+        $response->assertJsonStructure(['message', 'errors']);
+    }
+
+    public function test_order_history_filters_do_not_expose_another_users_orders(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $otherOrder = Order::factory()->for($otherUser)->create([
+            'symbol' => AssetSymbol::ETH,
+            'side' => OrderSide::SELL,
+            'status' => OrderStatus::FILLED,
+        ]);
+        Order::factory()->for($user)->create([
+            'symbol' => AssetSymbol::BTC,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/profile/orders?symbol=ETH&side=sell&status=2');
+
+        $response->assertOk();
+        $response->assertJsonPath('orders', []);
+        $response->assertJsonPath('meta.total', 0);
+        $response->assertJsonMissing(['id' => $otherOrder->id]);
     }
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
-import type { OrderSide } from '@/types/trading';
+import { ORDER_SIDE_LABELS, type OrderSide } from '@/types/trading';
 
 defineProps<{
     side: OrderSide;
@@ -16,6 +16,6 @@ defineProps<{
                 : 'border-sell/40 bg-sell/10 text-sell-foreground'
         "
     >
-        {{ side === 'buy' ? 'Buy' : 'Sell' }}
+        {{ ORDER_SIDE_LABELS[side] }}
     </Badge>
 </template>

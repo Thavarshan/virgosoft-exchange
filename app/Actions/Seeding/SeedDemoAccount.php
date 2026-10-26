@@ -54,7 +54,7 @@ class SeedDemoAccount
      *
      * @param  numeric-string  $amount
      */
-    private function initializeAsset(
+    protected function initializeAsset(
         User $user,
         AssetSymbol $symbol,
         string $amount,

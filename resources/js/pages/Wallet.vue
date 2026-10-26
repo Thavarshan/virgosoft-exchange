@@ -163,8 +163,10 @@ onUnmounted(() => {
                 :refreshing="history.refreshing.value"
                 :cancelling-order-ids="pendingCancellationIds"
                 :error="history.error.value"
+                :filters="history.filters.value"
                 @cancel="handleCancel"
                 @page="history.loadHistory"
+                @filters="history.setFilters"
             />
 
             <div class="space-y-4">
@@ -178,6 +180,7 @@ onUnmounted(() => {
                     <MarketSelect
                         :model-value="selectedSymbol"
                         :markets="TRADING_MARKETS"
+                        aria-label="Orderbook market"
                         @update:model-value="selectSymbol"
                     />
                 </div>

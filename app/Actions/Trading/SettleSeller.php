@@ -9,9 +9,8 @@ use Illuminate\Validation\ValidationException;
 
 class SettleSeller
 {
-    private const USD_SCALE = 2;
-
-    private const ASSET_SCALE = 8;
+    protected const USD_SCALE = 2;
+    protected const ASSET_SCALE = 8;
 
     /**
      * Credit the seller and release the reserved asset quantity.

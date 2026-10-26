@@ -1,6 +1,7 @@
 import { apiClient } from './api';
 import type {
     OrderHistoryResponse,
+    OrderHistoryFilters,
     OrderResponse,
     OrderbookResponse,
     PlaceOrderPayload,
@@ -25,10 +26,23 @@ export async function fetchOrderbook(
 
 export async function fetchOrderHistory(
     page = 1,
+    filters: OrderHistoryFilters = {},
 ): Promise<OrderHistoryResponse> {
+    const params: Record<string, number | string> = { page };
+
+    if (filters.symbol !== undefined) {
+        params.symbol = filters.symbol;
+    }
+    if (filters.side !== undefined) {
+        params.side = filters.side;
+    }
+    if (filters.status !== undefined) {
+        params.status = filters.status;
+    }
+
     const response = await apiClient.get<OrderHistoryResponse>(
         '/profile/orders',
-        { params: { page } },
+        { params },
     );
 
     return response.data;

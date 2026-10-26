@@ -13,6 +13,7 @@ defineProps<{
     markets: readonly TradingMarket[];
     id?: string;
     describedBy?: string;
+    ariaLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -25,7 +26,12 @@ const emit = defineEmits<{
         :model-value="modelValue"
         @update:model-value="emit('update:modelValue', $event as AssetSymbol)"
     >
-        <SelectTrigger :id="id" :aria-describedby="describedBy" class="w-full">
+        <SelectTrigger
+            :id="id"
+            :aria-describedby="describedBy"
+            :aria-label="ariaLabel"
+            class="w-full"
+        >
             <SelectValue placeholder="Select a market" />
         </SelectTrigger>
         <SelectContent>

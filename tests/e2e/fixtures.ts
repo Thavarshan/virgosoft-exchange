@@ -86,6 +86,13 @@ export function seedDashboardActivity(): void {
     });
 }
 
+export function seedOrderHistory(): void {
+    execFileSync('php', ['artisan', 'e2e:prepare', '--reset', '--history'], {
+        env: e2eEnvironment,
+        stdio: 'inherit',
+    });
+}
+
 export async function submitOrder(
     page: Page,
     order: {
