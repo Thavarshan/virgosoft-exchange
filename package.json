@@ -9,14 +9,15 @@
         "check": "vp check",
         "check:fix": "vp check --fix",
         "types:check": "vue-tsc --noEmit",
-        "test": "vitest run --exclude '**/tests/e2e/**'",
+        "test": "vitest run --exclude '**/tests/e2e/**' --exclude '**/tests/smoke/**'",
         "e2e:prepare": "php artisan e2e:prepare",
         "test:e2e": "playwright test",
+        "test:smoke": "playwright test -c playwright.smoke.config.ts",
         "types:e2e": "tsc --noEmit -p tsconfig.e2e.json",
         "test:watch": "vitest",
         "lint": "vp check",
-        "format": "prettier --write resources/js resources/css tests/e2e playwright.config.ts",
-        "format:check": "prettier --check resources/js resources/css tests/e2e playwright.config.ts"
+        "format": "prettier --write resources/js resources/css tests/e2e tests/smoke playwright.config.ts playwright.smoke.config.ts",
+        "format:check": "prettier --check resources/js resources/css tests/e2e tests/smoke playwright.config.ts playwright.smoke.config.ts"
     },
     "dependencies": {
         "@inertiajs/vite": "^3.9.1",
