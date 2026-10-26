@@ -43,7 +43,11 @@ export default defineConfig({
         },
     },
     test: {
-        exclude: ['**/tests/e2e/**', '**/tests/smoke/**'],
+        exclude: [
+            '**/tests/e2e/**',
+            '**/tests/smoke/**',
+            '**/tests/screenshots/**',
+        ],
     },
     lint: {
         ignorePatterns: [

@@ -6,7 +6,9 @@
     "include": [
         "playwright.config.ts",
         "playwright.smoke.config.ts",
+        "playwright.screenshots.config.ts",
         "tests/e2e/**/*.ts",
-        "tests/smoke/**/*.ts"
+        "tests/smoke/**/*.ts",
+        "tests/screenshots/**/*.ts"
     ]
 }
