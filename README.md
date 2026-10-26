@@ -275,6 +275,121 @@ Backend tests use PostgreSQL. Run `make db-up` first when the database is not
 running. The Compose init script creates `virgosoft_testing` alongside the
 development and E2E databases.
 
+## Git hooks
+
+Run `make hooks` once per clone (`make setup` does it for you). It points
+`core.hooksPath` at `.githooks/` and sets the repository-local identity to
+`Thavarshan <tjthavarshan@gmail.com>`.
+
+- **pre-commit** checks the commit identity, then Pint on staged PHP files,
+  Larastan, `vp check`, Prettier, and `vue-tsc`. PHP checks run only when PHP
+  is staged and frontend checks only when frontend files are staged.
+- **commit-msg** requires a capitalised subject of at most 72 characters with
+  no trailing period and a blank line before any body, and rejects messages
+  containing terms that must not appear in this repository's history.
+- **pre-push** confirms the remote is `Thavarshan/virgosoft-exchange` and the
+  active `gh` account is `Thavarshan`, checks every outgoing commit, then runs
+  Pint, Larastan, the PHP and frontend tests, lint, types, and the production
+  build.
+
+The hooks run PHP and Node through Sail when it is running and otherwise use
+host tools. They stop with an explanation instead of skipping when neither is
+available. `git commit --no-verify` bypasses local hooks, so the `identity-guard`
+CI job applies the same identity and message rules to every push and pull
+request.
+
+## Deployment to Laravel Cloud
+
+The `CI` workflow deploys only when every gate passes:
+
+```text
+identity-guard ─┐
+ci ─────────────┤
+e2e ────────────┼─> deploy ──> smoke
+sail-setup ─────┘
+```
+
+`deploy` runs only for pushes to `main`. It checks that `main` still points at
+the commit CI validated, starts the Laravel Cloud deployment through the API,
+and polls until it succeeds or fails (`scripts/ci/deploy-laravel-cloud.sh`).
+If a newer commit has already landed, that run is skipped and the newer commit's
+own run deploys it. `smoke` then runs `tests/smoke` with Playwright against the
+live site. It checks health, the login page, anonymous API rejection, login,
+the profile and orderbook APIs, the realtime connection, and a place-then-cancel
+round trip of one far-from-market order that restores the smoke user's balance.
+
+Run the smoke suite by hand against any deployment:
+
+```shell
+SMOKE_BASE_URL=https://your-app.laravel.cloud \
+SMOKE_USER_EMAIL=... SMOKE_USER_PASSWORD=... \
+npm run test:smoke
+```
+
+The smoke suite never starts a server or resets a database. Do not point the E2E
+suite at a deployment; `e2e:prepare --reset` is only for the isolated
+`virgosoft_e2e` database.
+
+### Laravel Cloud configuration
+
+The `production` environment of the `virgosoft-exchange` application (Jerome
+organization, `us-east-1`) is configured for the lowest practical cost:
+
+- **App:** one `flex-512mb` instance, no scaling, hibernating after 5 idle
+  minutes, so it is billed only while serving requests.
+- **Database:** Serverless Postgres 17 at 0.25 compute units, suspending after
+  60 idle seconds, with one day of point-in-time recovery.
+- **Queue worker:** one `queue:work` background process on the app instance,
+  needed to deliver `OrderMatched` broadcasts. It adds no separate compute.
+- **Not used:** cache clusters, WebSocket clusters (realtime uses hosted
+  Pusher), object storage, autoscaling, and extra environments.
+- **Deploys:** **Push to deploy is off** so nothing deploys without passing CI.
+  The deploy hook is also off.
+
+The environment variables mirror `.env.example` for production
+(`APP_ENV=production`, database sessions, cache and queue, `BROADCAST_CONNECTION=pusher`,
+`SANCTUM_STATEFUL_DOMAINS`, `SESSION_SECURE_COOKIE=true`) plus the `PUSHER_*` and
+`VITE_PUSHER_*` values and the smoke user's `SMOKE_USER_EMAIL` and
+`SMOKE_USER_PASSWORD`. Set them in Laravel Cloud, never in the repository.
+
+Build command:
+
+```shell
+composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+npm ci --audit false
+npm run build
+php artisan config:cache
+php artisan view:cache
+php artisan event:cache
+```
+
+Route caching is deliberately omitted because the application defines
+closure routes. Deploy command:
+
+```shell
+php artisan migrate --force && php artisan app:ensure-smoke-user
+```
+
+The GitHub `production` environment holds the secrets `LARAVEL_CLOUD_TOKEN`
+(an organization API token), `LARAVEL_CLOUD_ENVIRONMENT_ID`, `SMOKE_BASE_URL`,
+`SMOKE_USER_EMAIL`, and `SMOKE_USER_PASSWORD`. Set the repository variable
+`SMOKE_REQUIRE_REALTIME` to `false` for a deployment without Pusher.
+
+`app:ensure-smoke-user` creates a user with `$10.00` and no assets, and
+rotates its password when the secret changes. It never overwrites balances. The
+demo seeders stay restricted to local and testing environments.
+
+### Rolling back
+
+The simplest rollback is `git revert` of the bad commit on `main`: CI gates it and
+deploys it like any other change. To redeploy an exact earlier commit without a
+new commit, enable **Deploy hook** in the environment's Deployments settings,
+add its URL as the `LARAVEL_CLOUD_DEPLOY_HOOK` secret of the GitHub `production`
+environment, and run the **Roll back production** workflow with the full SHA of
+an earlier commit on `main`. It redeploys that commit and re-runs the smoke
+checks. Migrations are not reversed, so roll back only to a commit whose schema
+works with the current database.
+
 ## Troubleshooting
 
 - Check services with `docker compose ps` and PostgreSQL with

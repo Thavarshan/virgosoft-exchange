@@ -27,6 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
         ]);
         $middleware->statefulApi();
+        // Laravel Cloud terminates TLS at its proxy; without this, generated
+        // URLs and redirects would use http:// and break secure cookies.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

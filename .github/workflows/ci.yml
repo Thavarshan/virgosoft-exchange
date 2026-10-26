@@ -251,3 +251,101 @@ jobs:
             - name: Stop Sail services
               if: always()
               run: ./vendor/bin/sail down --volumes --remove-orphans
+
+    identity-guard:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  fetch-depth: 0
+                  ref: ${{ github.event.pull_request.head.sha || github.sha }}
+                  persist-credentials: false
+
+            - name: Check commit authors and messages
+              env:
+                  BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+                  HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+              run: |
+                  base="$BASE_SHA"
+                  # A new branch or a force push leaves no usable base: check everything.
+                  if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+                    base=ALL
+                  fi
+                  bash scripts/guard.sh range "$base" "$HEAD_SHA"
+
+            - name: Check pull request title and description
+              if: github.event_name == 'pull_request'
+              env:
+                  PR_TITLE: ${{ github.event.pull_request.title }}
+                  PR_BODY: ${{ github.event.pull_request.body }}
+              run: printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | bash scripts/guard.sh text
+
+    deploy:
+        # Nothing reaches Laravel Cloud unless every gate above is green.
+        needs: [identity-guard, ci, e2e, sail-setup]
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        environment: production
+        concurrency:
+            group: deploy-production
+            cancel-in-progress: false
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Deploy the tested commit to Laravel Cloud
+              env:
+                  LARAVEL_CLOUD_DEPLOY_HOOK: ${{ secrets.LARAVEL_CLOUD_DEPLOY_HOOK }}
+                  LARAVEL_CLOUD_TOKEN: ${{ secrets.LARAVEL_CLOUD_TOKEN }}
+                  LARAVEL_CLOUD_ENVIRONMENT_ID: ${{ secrets.LARAVEL_CLOUD_ENVIRONMENT_ID }}
+                  DEPLOY_SHA: ${{ github.sha }}
+                  DEPLOY_REPOSITORY: ${{ github.repository }}
+              run: bash scripts/ci/deploy-laravel-cloud.sh
+
+    smoke:
+        needs: deploy
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        environment: production
+        env:
+            SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+            SMOKE_USER_EMAIL: ${{ secrets.SMOKE_USER_EMAIL }}
+            SMOKE_USER_PASSWORD: ${{ secrets.SMOKE_USER_PASSWORD }}
+            SMOKE_REQUIRE_REALTIME: ${{ vars.SMOKE_REQUIRE_REALTIME }}
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Setup Node
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: '22'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Playwright browser
+              run: npx playwright install --with-deps chromium
+
+            - name: Run smoke checks against the deployment
+              run: npm run test:smoke
+
+            - name: Upload smoke report
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+              with:
+                  name: smoke-artifacts
+                  path: |
+                      smoke-report/
+                      smoke-results/
+                  if-no-files-found: ignore

@@ -1,0 +1,95 @@
+name: Roll back production
+
+# Redeploys a previous commit. Migrations are not reversed, so only roll back
+# to a commit whose schema is compatible with the current database.
+on:
+    workflow_dispatch:
+        inputs:
+            sha:
+                description: Full 40-character commit SHA on main to redeploy
+                required: true
+                type: string
+
+permissions:
+    contents: read
+
+jobs:
+    rollback:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        environment: production
+        concurrency:
+            group: deploy-production
+            cancel-in-progress: false
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+
+            - name: Validate the commit
+              env:
+                  TARGET_SHA: ${{ inputs.sha }}
+              run: |
+                  printf '%s' "$TARGET_SHA" | grep -Eq '^[0-9a-f]{40}$'
+                  git merge-base --is-ancestor "$TARGET_SHA" origin/main
+
+            - name: Require the deploy hook
+              env:
+                  LARAVEL_CLOUD_DEPLOY_HOOK: ${{ secrets.LARAVEL_CLOUD_DEPLOY_HOOK }}
+              run: |
+                  if [ -z "$LARAVEL_CLOUD_DEPLOY_HOOK" ]; then
+                    echo '::error::Redeploying an older commit needs the LARAVEL_CLOUD_DEPLOY_HOOK secret. Enable Deploy hook in the environment settings and add its URL as a secret of the production environment.'
+                    exit 1
+                  fi
+
+            - name: Redeploy the commit to Laravel Cloud
+              env:
+                  LARAVEL_CLOUD_DEPLOY_HOOK: ${{ secrets.LARAVEL_CLOUD_DEPLOY_HOOK }}
+                  LARAVEL_CLOUD_TOKEN: ${{ secrets.LARAVEL_CLOUD_TOKEN }}
+                  LARAVEL_CLOUD_ENVIRONMENT_ID: ${{ secrets.LARAVEL_CLOUD_ENVIRONMENT_ID }}
+                  DEPLOY_SHA: ${{ inputs.sha }}
+              run: bash scripts/ci/deploy-laravel-cloud.sh
+
+    smoke:
+        needs: rollback
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        environment: production
+        env:
+            SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+            SMOKE_USER_EMAIL: ${{ secrets.SMOKE_USER_EMAIL }}
+            SMOKE_USER_PASSWORD: ${{ secrets.SMOKE_USER_PASSWORD }}
+            SMOKE_REQUIRE_REALTIME: ${{ vars.SMOKE_REQUIRE_REALTIME }}
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Setup Node
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version: '22'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Playwright browser
+              run: npx playwright install --with-deps chromium
+
+            - name: Run smoke checks against the deployment
+              run: npm run test:smoke
+
+            - name: Upload smoke report
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+              with:
+                  name: smoke-artifacts
+                  path: |
+                      smoke-report/
+                      smoke-results/
+                  if-no-files-found: ignore
