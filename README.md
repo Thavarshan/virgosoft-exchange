@@ -8,6 +8,83 @@ persisted trade records. The Inertia/Vue screens provide the live trading demo
 with limit-order placement, wallet/order history, orderbook polling, and
 private-channel updates when Pusher is configured.
 
+**Live demo:** <https://virgosoft-exchange-production-zspwz2.laravel.cloud>.
+The login page lists the two pre-funded demo accounts and fills the form for
+you.
+
+## Screenshots
+
+Images follow your GitHub theme (dark or light). They are generated from the
+real application, with trades produced by the matching engine, so they show
+what a reviewer will see after signing in with the demo accounts.
+
+### Sign in
+
+The login page tells reviewers about the demo accounts and fills the form for
+them.
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/01-login.png"><img alt="Login page with the demo credentials popover open" src=".github/screenshots/desktop-light/01-login.png" width="640"></picture>
+</p>
+
+### Dashboard
+
+Balances, a daily executed-value chart, orders by status, and recent
+executions, with the live-connection indicator.
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/04-dashboard.png"><img alt="Dashboard" src=".github/screenshots/desktop-light/04-dashboard.png" width="900"></picture>
+</p>
+
+### Limit order
+
+Exact USD and asset precision, with the reserved amount and commission
+previewed before submitting.
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/05-limit-order.png"><img alt="Limit order form with a cost preview" src=".github/screenshots/desktop-light/05-limit-order.png" width="900"></picture>
+</p>
+
+### Orders and wallet
+
+Wallet balances, filterable order history, and the shared orderbook.
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/06-orders-and-wallet.png"><img alt="Orders and wallet" src=".github/screenshots/desktop-light/06-orders-and-wallet.png" width="900"></picture>
+</p>
+
+### Account and settings
+
+<table>
+  <tr>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/07-settings-profile.png"><img alt="Profile" src=".github/screenshots/desktop-light/07-settings-profile.png" width="300"></picture><br><sub>Profile</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/08-settings-security.png"><img alt="Security, two-factor, passkeys" src=".github/screenshots/desktop-light/08-settings-security.png" width="300"></picture><br><sub>Security, two-factor, passkeys</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/09-settings-appearance.png"><img alt="Appearance" src=".github/screenshots/desktop-light/09-settings-appearance.png" width="300"></picture><br><sub>Appearance</sub></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/02-register.png"><img alt="Register" src=".github/screenshots/desktop-light/02-register.png" width="450"></picture><br><sub>Register</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/desktop-dark/03-forgot-password.png"><img alt="Forgot password" src=".github/screenshots/desktop-light/03-forgot-password.png" width="450"></picture><br><sub>Forgot password</sub></td>
+  </tr>
+</table>
+
+### On a phone
+
+<table>
+  <tr>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/mobile-dark/01-login.png"><img alt="Login" src=".github/screenshots/mobile-light/01-login.png" width="200"></picture><br><sub>Login</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/mobile-dark/04-dashboard.png"><img alt="Dashboard" src=".github/screenshots/mobile-light/04-dashboard.png" width="200"></picture><br><sub>Dashboard</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/mobile-dark/05-limit-order.png"><img alt="Limit order" src=".github/screenshots/mobile-light/05-limit-order.png" width="200"></picture><br><sub>Limit order</sub></td>
+    <td align="center" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/screenshots/mobile-dark/06-orders-and-wallet.png"><img alt="Orders and wallet" src=".github/screenshots/mobile-light/06-orders-and-wallet.png" width="200"></picture><br><sub>Orders and wallet</sub></td>
+  </tr>
+</table>
+
+To regenerate them after a UI change, run `npm run screenshots` from the same
+environment as the browser tests (see [Browser tests](#browser-tests)); it
+rewrites `.github/screenshots/`.
+
 ## Stack
 
 - Laravel 13.38, PHP 8.5 Sail runtime (Composer requires PHP ^8.3), Fortify,
