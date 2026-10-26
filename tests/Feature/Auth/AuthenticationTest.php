@@ -11,6 +11,9 @@ class AuthenticationTest extends FeatureTestCase
 {
     public function test_the_inertia_login_page_is_available(): void
     {
+        // Independent of the DEMO_ACCOUNTS value in the local .env file.
+        config(['app.demo_accounts' => false]);
+
         $response = $this->get('/login');
 
         $response->assertInertia(fn (Assert $page): Assert => $page
