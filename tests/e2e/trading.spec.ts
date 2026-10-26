@@ -20,7 +20,7 @@ test('users can log in, reach the dashboard, and log out', async ({ page }) => {
 
     await page.getByRole('button', { name: /Demo Trader/ }).click();
     await page.getByRole('menuitem', { name: 'Log out' }).click();
-    await page.waitForURL((url) => url.pathname === '/');
+    await page.waitForURL('**/login');
 
     await page.goto('/dashboard');
     await page.waitForURL('**/login');

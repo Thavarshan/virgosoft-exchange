@@ -1,9 +1,13 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
+// There is no public landing page: the app is for signed-in traders only.
+Route::get('/', fn () => redirect()->route(
+    Auth::check() ? 'dashboard' : 'login',
+))->name('home');
 
 Route::get('dashboard', fn () => Inertia::render('Dashboard'))
     ->middleware(['auth', 'verified'])
