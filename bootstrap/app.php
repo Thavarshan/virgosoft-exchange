@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -26,7 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
         ]);
-        $middleware->statefulApi();
+        // Replaces statefulApi() so same-origin browser requests stay
+        // authenticated even when the Referer header is stripped.
+        $middleware->api(prepend: [EnsureFrontendRequestsAreStateful::class]);
         // Laravel Cloud terminates TLS at its proxy; without this, generated
         // URLs and redirects would use http:// and break secure cookies.
         $middleware->trustProxies(at: '*');
