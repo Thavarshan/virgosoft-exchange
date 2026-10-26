@@ -95,6 +95,15 @@ export function useTradingRealtime(
     onMatch: (payload: OrderMatchedPayload) => void,
     onReconnect: () => void,
 ): { connectionStatus: Ref<TradingConnectionStatus> } {
+    // Server renders must not retain per-user subscriptions across requests.
+    if (typeof window === 'undefined') {
+        return {
+            connectionStatus: ref(
+                isEchoConfigured ? 'connecting' : 'unconfigured',
+            ),
+        };
+    }
+
     const subscription =
         subscriptions.get(userId) ?? createSubscription(userId);
 
