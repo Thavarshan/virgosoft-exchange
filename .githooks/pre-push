@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Heavy checks before anything leaves the machine.
+
+set -euo pipefail
+
+# shellcheck source=.githooks/lib.sh
+. "$(dirname "$0")/lib.sh"
+
+remote_url="${2:-}"
+zero='0000000000000000000000000000000000000000'
+pushing_branches=0
+
+step 'Remote'
+case "$remote_url" in
+    *github.com[:/]Thavarshan/virgosoft-exchange | *github.com[:/]Thavarshan/virgosoft-exchange.git) ;;
+    *) die "Refusing to push to '${remote_url}'; only Thavarshan/virgosoft-exchange is allowed." ;;
+esac
+
+step 'GitHub account'
+command -v gh >/dev/null 2>&1 || die 'The GitHub CLI (gh) is required to confirm the active account.'
+active="$(gh api user --jq .login 2>/dev/null)" || die 'Could not read the active GitHub account. Run: gh auth status'
+[ "$active" = 'Thavarshan' ] || die "gh is signed in as '${active}'. Run: gh auth switch --user Thavarshan"
+
+step 'Outgoing commits'
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+    [ "$local_sha" != "$zero" ] || continue
+    pushing_branches=1
+
+    if [ "$remote_sha" = "$zero" ]; then
+        bash scripts/guard.sh range NEW "$local_sha"
+    else
+        bash scripts/guard.sh range "$remote_sha" "$local_sha"
+    fi
+done
+
+if [ "$pushing_branches" -eq 0 ]; then
+    printf '\nNothing to verify (deleting refs only).\n'
+    exit 0
+fi
+
+select_runner
+
+step 'PHP format (Pint)'
+vbin pint --parallel --test
+
+step 'PHP static analysis (Larastan)'
+artisan config:clear --ansi
+vbin phpstan analyse --memory-limit=1G --no-progress
+
+step 'Route helpers'
+generate_wayfinder
+
+step 'TypeScript/Vue lint, format and types'
+npm_cmd run check
+npm_cmd run format:check
+npm_cmd run types:check
+
+step 'Production build'
+npm_cmd run build
+
+# Feature tests render Inertia pages, which need the built Vite manifest.
+step 'Backend tests'
+artisan test --compact
+
+step 'Frontend tests'
+npm_cmd run test
+
+printf '\nPre-push checks passed.\n'

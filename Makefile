@@ -1,6 +1,12 @@
-.PHONY: setup db-up db-down dev migrate test test-file test-filter frontend-test lint analyse build fresh
+.PHONY: setup hooks db-up db-down dev migrate test test-file test-filter frontend-test lint analyse build fresh
 
-setup:
+hooks:
+	git config --local core.hooksPath .githooks
+	chmod +x .githooks/* scripts/*.sh scripts/ci/*.sh
+	git config --local user.name Thavarshan
+	git config --local user.email tjthavarshan@gmail.com
+
+setup: hooks
 	@if [ ! -f .env ]; then cp .env.example .env; fi
 	docker run --rm -u "$$(id -u):$$(id -g)" -v "$$(pwd):/app" -w /app composer:2 composer install --no-interaction
 	WWWUSER="$$(id -u)" WWWGROUP="$$(id -g)" ./vendor/bin/sail build

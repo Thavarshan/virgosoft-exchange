@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Enforce the commit message rules and the commit identity.
+
+set -euo pipefail
+
+# shellcheck source=.githooks/lib.sh
+. "$(dirname "$0")/lib.sh"
+
+bash scripts/guard.sh identity
+bash scripts/guard.sh message "$1"

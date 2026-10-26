@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Fast checks on every commit. Heavy checks (build, full tests) run on push.
+
+set -euo pipefail
+
+# shellcheck source=.githooks/lib.sh
+. "$(dirname "$0")/lib.sh"
+
+step 'Commit identity'
+bash scripts/guard.sh identity
+
+mapfile -t php_files < <(git diff --cached --name-only --diff-filter=ACMR -- '*.php')
+mapfile -t web_files < <(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.vue' '*.js' '*.css' 'package.json')
+
+if [ "${#php_files[@]}" -eq 0 ] && [ "${#web_files[@]}" -eq 0 ]; then
+    printf '\nNo PHP or frontend files staged; nothing else to check.\n'
+    exit 0
+fi
+
+select_runner
+
+if [ "${#php_files[@]}" -gt 0 ]; then
+    step 'PHP format (Pint) on staged files'
+    vbin pint --test "${php_files[@]}"
+
+    step 'PHP static analysis (Larastan)'
+    vbin phpstan analyse --memory-limit=1G --no-progress
+fi
+
+if [ "${#web_files[@]}" -gt 0 ]; then
+    step 'Route helpers'
+    generate_wayfinder
+
+    step 'TypeScript/Vue lint'
+    npm_cmd run check
+
+    step 'TypeScript/Vue format'
+    npm_cmd run format:check
+
+    step 'TypeScript type check'
+    npm_cmd run types:check
+fi
+
+printf '\nPre-commit checks passed.\n'
