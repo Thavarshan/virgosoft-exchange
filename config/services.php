@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Dedicated account used by the post-deployment smoke checks.
+    'smoke' => [
+        'email' => env('SMOKE_USER_EMAIL'),
+        'password' => env('SMOKE_USER_PASSWORD'),
+    ],
+
 ];
