@@ -43,8 +43,17 @@ async function waitUntilHealthy(request: APIRequestContext): Promise<void> {
         .toBe(200);
 }
 
+// Sanctum serves cookie-authenticated API calls only to requests that look
+// like the SPA, meaning they carry an Origin or Referer from a stateful
+// domain. Browser XHR always does; Playwright's request context does not.
+function apiGet(page: Page, path: string) {
+    return page.request.get(path, {
+        headers: { Accept: 'application/json', Referer: `${baseURL}/` },
+    });
+}
+
 async function profile(page: Page): Promise<Profile['user']> {
-    const response = await page.request.get('/api/profile');
+    const response = await apiGet(page, '/api/profile');
     expect(response.status()).toBe(200);
 
     return ((await response.json()) as Profile).user;
@@ -115,7 +124,7 @@ test.describe('deployed application', () => {
         expect(user.balance).toMatch(/^\d+\.\d{2}$/);
         expect(user.locked_balance).toMatch(/^\d+\.\d{2}$/);
 
-        const orderbook = await page.request.get('/api/orders?symbol=BTC');
+        const orderbook = await apiGet(page, '/api/orders?symbol=BTC');
         expect(orderbook.status()).toBe(200);
         expect(Array.isArray((await orderbook.json()).orders)).toBe(true);
     });
