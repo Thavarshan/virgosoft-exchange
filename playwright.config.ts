@@ -35,6 +35,7 @@ export const e2eEnvironment: Record<string, string> = {
     VITE_PUSHER_PORT: process.env.VITE_PUSHER_PORT ?? '6001',
     VITE_PUSHER_SCHEME: process.env.VITE_PUSHER_SCHEME ?? 'http',
     VITE_E2E: process.env.VITE_E2E ?? 'true',
+    DEMO_ACCOUNTS: 'true',
 };
 
 export default defineConfig({

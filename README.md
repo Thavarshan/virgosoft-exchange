@@ -77,6 +77,16 @@ default demo account. Seeders are restricted to local and testing
 environments. They initialize missing users and asset rows but do not overwrite
 existing balances, reservations, or orders when rerun.
 
+When `DEMO_ACCOUNTS=true` (set in `.env.example` for local development), the
+login page shows a **Reviewing this demo?** notice. Its popover lists both
+accounts with their passwords and fills the form with one click. On a deployed
+demo environment the same flag makes `php artisan app:ensure-demo-accounts`
+create the two accounts with a larger bankroll of `$100000.00`,
+`10.00000000 BTC`, and `100.00000000 ETH`, so a reviewer can trade
+realistic sizes. The command never changes the balances of existing accounts.
+The passwords are public by design, so leave `DEMO_ACCOUNTS` unset anywhere
+that holds real data. Newly registered users still start with no funds.
+
 ## Backend API
 
 All API responses are JSON. Sanctum session authentication protects private
@@ -367,13 +377,15 @@ Route caching is deliberately omitted because the application defines
 closure routes. Deploy command:
 
 ```shell
-php artisan migrate --force && php artisan app:ensure-smoke-user
+php artisan migrate --force && php artisan app:ensure-smoke-user && php artisan app:ensure-demo-accounts
 ```
 
 The GitHub `production` environment holds the secrets `LARAVEL_CLOUD_TOKEN`
 (an organization API token), `LARAVEL_CLOUD_ENVIRONMENT_ID`, `SMOKE_BASE_URL`,
 `SMOKE_USER_EMAIL`, and `SMOKE_USER_PASSWORD`. Set the repository variable
 `SMOKE_REQUIRE_REALTIME` to `false` for a deployment without Pusher.
+
+The environment also sets `DEMO_ACCOUNTS=true` so the login page lists the demo accounts.
 
 `app:ensure-smoke-user` creates a user with `$10.00` and no assets, and
 rotates its password when the secret changes. It never overwrites balances. The
