@@ -76,6 +76,23 @@ describe('Login demo accounts', () => {
         expect(notice.text()).toContain('2 pre-funded demo accounts');
     });
 
+    it('renders a single accessible trigger button, not nested buttons', async () => {
+        const wrapper = mountLogin({ demoAccounts });
+
+        expect(
+            wrapper.element.querySelectorAll(
+                'button[data-test="demo-accounts-trigger"]',
+            ),
+        ).toHaveLength(1);
+        expect(wrapper.element.querySelector('button button')).toBeNull();
+
+        await wrapper
+            .get('[data-test="demo-accounts-trigger"]')
+            .trigger('click');
+
+        expect(document.body.querySelector('button button')).toBeNull();
+    });
+
     it('lists both accounts with their credentials in the popover', async () => {
         const wrapper = mountLogin({ demoAccounts });
 
