@@ -1,14 +1,49 @@
 name: Hosted Pusher E2E
 
 on:
+    workflow_run:
+        workflows:
+            - CI
+        types:
+            - completed
+        branches:
+            - main
     workflow_dispatch:
 
 permissions:
     contents: read
 
 jobs:
-    pusher-e2e:
+    pusher-credentials:
+        if: >-
+            github.event_name == 'workflow_dispatch' ||
+            github.event.workflow_run.conclusion == 'success'
         runs-on: ubuntu-latest
+        outputs:
+            configured: ${{ steps.check.outputs.configured }}
+
+        steps:
+            - name: Check hosted-Pusher credentials
+              id: check
+              env:
+                  PUSHER_APP_ID: ${{ secrets.PUSHER_APP_ID }}
+                  PUSHER_APP_KEY: ${{ secrets.PUSHER_APP_KEY }}
+                  PUSHER_APP_SECRET: ${{ secrets.PUSHER_APP_SECRET }}
+                  PUSHER_APP_CLUSTER: ${{ secrets.PUSHER_APP_CLUSTER }}
+              run: |
+                  if [[ -z "$PUSHER_APP_ID" || -z "$PUSHER_APP_KEY" || -z "$PUSHER_APP_SECRET" || -z "$PUSHER_APP_CLUSTER" ]]; then
+                    echo "configured=false" >> "$GITHUB_OUTPUT"
+                    echo "::notice::Hosted-Pusher E2E skipped because its GitHub Actions secrets are not configured."
+                    exit 0
+                  fi
+
+                  echo "configured=true" >> "$GITHUB_OUTPUT"
+
+    pusher-e2e:
+        needs: pusher-credentials
+        if: needs.pusher-credentials.outputs.configured == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
         env:
             APP_ENV: testing
             APP_URL: http://127.0.0.1:8080
@@ -56,6 +91,7 @@ jobs:
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   persist-credentials: false
+                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
             - name: Setup PHP
               uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
@@ -75,16 +111,7 @@ jobs:
                   npm ci
 
             - name: Configure isolated hosted-Pusher environment
-              env:
-                  PUSHER_APP_ID: ${{ secrets.PUSHER_APP_ID }}
-                  PUSHER_APP_KEY: ${{ secrets.PUSHER_APP_KEY }}
-                  PUSHER_APP_SECRET: ${{ secrets.PUSHER_APP_SECRET }}
-                  PUSHER_APP_CLUSTER: ${{ secrets.PUSHER_APP_CLUSTER }}
               run: |
-                  test -n "$PUSHER_APP_ID"
-                  test -n "$PUSHER_APP_KEY"
-                  test -n "$PUSHER_APP_SECRET"
-                  test -n "$PUSHER_APP_CLUSTER"
                   cp .env.testing.example .env
                   php artisan key:generate --force
                   sed -i -E 's|^APP_URL=.*|APP_URL=http://127.0.0.1:8080|' .env
