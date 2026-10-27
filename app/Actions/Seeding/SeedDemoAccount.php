@@ -2,11 +2,19 @@
 
 namespace App\Actions\Seeding;
 
-use App\Enums\AssetSymbol;
+use App\Actions\Wallet\InitializeWallet;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class SeedDemoAccount
 {
+    /**
+     * Create the seeder with the shared wallet initializer.
+     */
+    public function __construct(
+        protected readonly InitializeWallet $initializeWallet,
+    ) {}
+
     /**
      * Create a demo account and initialize only newly created financial rows.
      *
@@ -23,50 +31,35 @@ class SeedDemoAccount
         string $balance,
         array $assetBalances,
     ): User {
-        $user = User::firstOrCreate(
-            ['email' => $email],
-            [
-                'name' => $name,
-                'password' => $password,
-                'email_verified_at' => now(),
-            ],
-        );
-
-        if ($user->wasRecentlyCreated) {
-            $user->balance = $balance;
-            $user->locked_balance = '0.00';
-            $user->save();
-        }
-
-        foreach ($assetBalances as $symbol => $amount) {
-            $this->initializeAsset(
-                $user,
-                AssetSymbol::from($symbol),
-                $amount,
+        return DB::transaction(function () use (
+            $name,
+            $email,
+            $password,
+            $balance,
+            $assetBalances,
+        ): User {
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'name' => $name,
+                    'password' => $password,
+                    'email_verified_at' => now(),
+                    'is_demo' => true,
+                ],
             );
-        }
 
-        return $user;
-    }
+            if (! $user->is_demo) {
+                $user->forceFill(['is_demo' => true])->save();
+            }
 
-    /**
-     * Create an available asset balance only when the user lacks that asset.
-     *
-     * @param  numeric-string  $amount
-     */
-    protected function initializeAsset(
-        User $user,
-        AssetSymbol $symbol,
-        string $amount,
-    ): void {
-        $asset = $user->assets()->firstOrNew(['symbol' => $symbol]);
+            $this->initializeWallet->execute(
+                user: $user,
+                usdBalance: $balance,
+                assetBalances: $assetBalances,
+                initializeUsdBalance: $user->wasRecentlyCreated,
+            );
 
-        if ($asset->exists) {
-            return;
-        }
-
-        $asset->amount = $amount;
-        $asset->locked_amount = '0.00000000';
-        $asset->save();
+            return $user;
+        });
     }
 }

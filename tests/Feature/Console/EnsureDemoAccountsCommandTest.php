@@ -33,6 +33,7 @@ class EnsureDemoAccountsCommandTest extends FeatureTestCase
         foreach ([DefaultUserSeeder::EMAIL, DemoTradingSeeder::EMAIL] as $email) {
             $user = User::query()->where('email', $email)->firstOrFail();
 
+            $this->assertTrue($user->is_demo);
             $this->assertSame('100000.00', $user->balance);
             $this->assertSame('0.00', $user->locked_balance);
             $this->assertTrue(Hash::check(DefaultUserSeeder::PASSWORD, $user->password));

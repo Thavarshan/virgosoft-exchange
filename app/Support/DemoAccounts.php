@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Enums\AssetSymbol;
 use Database\Seeders\DefaultUserSeeder;
 use Database\Seeders\DemoTradingSeeder;
 
@@ -16,13 +15,10 @@ final class DemoAccounts
      *
      * Local and test seeders keep their smaller, deterministic balances.
      */
-    public const BALANCE = '100000.00';
+    public const BALANCE = StartingWallet::USD_BALANCE;
 
     /** @var array<string, numeric-string> */
-    public const ASSET_BALANCES = [
-        AssetSymbol::BTC->value => '10.00000000',
-        AssetSymbol::ETH->value => '100.00000000',
-    ];
+    public const ASSET_BALANCES = StartingWallet::ASSET_BALANCES;
 
     /**
      * Whether demo accounts are enabled for this environment.

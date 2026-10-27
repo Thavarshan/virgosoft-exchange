@@ -21,6 +21,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property bool $is_demo
  * @property numeric-string $balance
  * @property numeric-string $locked_balance
  * @property Carbon|null $email_verified_at
@@ -52,6 +53,7 @@ class User extends Authenticatable implements PasskeyUser
         return [
             'balance' => 'decimal:2',
             'email_verified_at' => 'datetime',
+            'is_demo' => 'boolean',
             'locked_balance' => 'decimal:2',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',

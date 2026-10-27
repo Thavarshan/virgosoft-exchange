@@ -132,7 +132,7 @@ Useful commands:
 
 ```shell
 make dev                         # Laravel, Vite, and queue listener
-./vendor/bin/sail artisan queue:work # Only when running without make dev
+./vendor/bin/sail artisan queue:work --queue=default,emails # Only without make dev
 make migrate
 make fresh                       # destructive disposable-data reset
 ```
@@ -162,7 +162,11 @@ create the two accounts with a larger bankroll of `$100000.00`,
 `10.00000000 BTC`, and `100.00000000 ETH`, so a reviewer can trade
 realistic sizes. The command never changes the balances of existing accounts.
 The passwords are public by design, so leave `DEMO_ACCOUNTS` unset anywhere
-that holds real data. Newly registered users still start with no funds.
+that holds real data. Newly registered accounts receive `$100000.00`,
+`10.00000000 BTC`, and `100.00000000 ETH` to make the trading screens usable
+immediately. Signup wallets are initialized transactionally and are separate
+from the seeded demo accounts, so their email notifications go to the address
+they registered with.
 
 ## Backend API
 
@@ -258,7 +262,7 @@ make dev
 when running the application without `make dev`:
 
 ```shell
-./vendor/bin/sail artisan queue:work
+./vendor/bin/sail artisan queue:work --queue=default,emails
 ```
 
 Without public Pusher settings, the wallet shows `Polling only` and refreshes
@@ -283,15 +287,28 @@ be cleared. These totals assume neither account has traded previously.
 
 ## Transactional email
 
-Password-reset emails use Laravel's existing Fortify notification. Production
-uses Resend through Laravel Cloud's Email resource; `resend/resend-php` is a
-runtime dependency. Attach a verified sending domain to the production
-environment, choose the sender, and deploy through CI so Cloud injects
-`MAIL_MAILER=resend`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, and the encrypted
-`RESEND_API_KEY`. Custom mail variables override the injected settings.
+Password-reset emails use Laravel's existing Fortify notification. Trading
+activity uses queued, mail-only Laravel notifications for orders that remain
+open after matching, completed matches, and cancellations. Receipts use the
+reservation or settlement values captured by the transaction.
 
-Local development defaults to `MAIL_MAILER=log`; tests do not deliver real
-email. Email verification and trading email notifications are not enabled.
+Real users receive trading mail at their account email. Seeded demo accounts
+are explicitly marked and route only trading receipts to
+`DEMO_NOTIFICATION_EMAIL`; authentication mail continues to use the account
+email. Set that environment variable to a monitored inbox in Laravel Cloud. If
+it is unset, demo trading mail is skipped and logged, while real-user mail
+continues normally.
+
+Production uses Resend through Laravel Cloud's Email resource;
+`resend/resend-php` is a runtime dependency. Attach a verified sending domain to
+the production environment, choose the sender, and deploy through CI so Cloud
+injects `MAIL_MAILER=resend`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, and the
+encrypted `RESEND_API_KEY`. Custom mail variables override the injected
+settings.
+
+Local development defaults to `MAIL_MAILER=log`; the `make dev` worker processes
+the `default` and `emails` queues, with broadcasts prioritized. Tests do not
+deliver real email. Email verification is not enabled.
 
 ## Tests and quality
 
@@ -353,11 +370,12 @@ npm run types:e2e
 npm run test:e2e
 ```
 
-Keep `php artisan queue:work` running in a separate terminal while the browser
-suite executes. It is required for queued broadcast delivery:
+Keep `php artisan queue:work --queue=default,emails` running in a separate
+terminal while the browser suite executes. It is required for queued broadcasts
+and trading email delivery:
 
 ```shell
-php artisan queue:work
+php artisan queue:work --queue=default,emails
 ```
 
 The required pull-request E2E job uses the same flow with Soketi and uploads
@@ -438,8 +456,9 @@ organization, `us-east-1`) is configured for the lowest practical cost:
   minutes, so it is billed only while serving requests.
 - **Database:** Serverless Postgres 17 at 0.25 compute units, suspending after
   60 idle seconds, with one day of point-in-time recovery.
-- **Queue worker:** one `queue:work` background process on the app instance,
-  needed to deliver `OrderMatched` broadcasts. It adds no separate compute.
+- **Queue worker:** one `queue:work --queue=default,emails` background process
+  on the app instance, processing broadcasts before trading email. It adds no
+  separate compute.
 - **Not used:** cache clusters, WebSocket clusters (realtime uses hosted
   Pusher), object storage, autoscaling, and extra environments.
 - **Deploys:** **Push to deploy is off** so nothing deploys without passing CI.

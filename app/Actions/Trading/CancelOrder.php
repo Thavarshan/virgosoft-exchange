@@ -4,6 +4,7 @@ namespace App\Actions\Trading;
 
 use App\Enums\OrderSide;
 use App\Enums\OrderStatus;
+use App\Events\OrderCancelled;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -40,9 +41,12 @@ class CancelOrder
         $lockedOrder = $this->lockOrder($lockedUser, $order);
 
         $this->ensureOrderIsOpen($lockedOrder);
-        $this->releaseReservation($lockedUser, $lockedOrder);
+        $releasedReservation = $this->releaseReservation($lockedUser, $lockedOrder);
+        $cancelledOrder = $this->markAsCancelled($lockedOrder);
 
-        return $this->markAsCancelled($lockedOrder);
+        OrderCancelled::dispatch($cancelledOrder, $releasedReservation);
+
+        return $cancelledOrder;
     }
 
     /**
@@ -72,8 +76,10 @@ class CancelOrder
 
     /**
      * Release the currency or asset reservation belonging to the order.
+     *
+     * @return numeric-string
      */
-    protected function releaseReservation(User $user, Order $order): void
+    protected function releaseReservation(User $user, Order $order): string
     {
         if ($order->side === OrderSide::BUY) {
             $reservation = $this->calculateOrderReservation->execute(
@@ -82,7 +88,7 @@ class CancelOrder
             );
             $this->releaseUsd->execute($user, $reservation);
 
-            return;
+            return $reservation;
         }
 
         $this->releaseAsset->execute(
@@ -90,6 +96,8 @@ class CancelOrder
             $order->symbol,
             $order->amount,
         );
+
+        return $order->amount;
     }
 
     /**

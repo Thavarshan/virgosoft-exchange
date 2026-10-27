@@ -206,7 +206,7 @@ jobs:
 
             - name: Start queue worker
               run: |
-                  php artisan queue:work --tries=1 --timeout=120 > storage/logs/e2e-queue.log 2>&1 &
+                  php artisan queue:work --queue=default,emails --tries=1 --timeout=120 > storage/logs/e2e-queue.log 2>&1 &
                   echo $! > storage/logs/e2e-queue.pid
 
             - name: Run browser tests

@@ -41,4 +41,8 @@ return [
         'password' => env('SMOKE_USER_PASSWORD'),
     ],
 
+    'trading_notifications' => [
+        'demo_email' => env('DEMO_NOTIFICATION_EMAIL'),
+    ],
+
 ];

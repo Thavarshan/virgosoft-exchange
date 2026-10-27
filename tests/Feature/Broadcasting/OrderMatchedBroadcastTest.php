@@ -7,8 +7,10 @@ use App\Enums\OrderSide;
 use App\Events\OrderMatched;
 use App\Models\Asset;
 use App\Models\User;
+use App\Notifications\OrderMatchedNotification;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -45,11 +47,20 @@ class OrderMatchedBroadcastTest extends TestCase
             'amount' => '0.01000000',
         ])->assertCreated();
 
-        Queue::assertNothingPushed();
+        Queue::assertNotPushed(BroadcastEvent::class);
+        Queue::assertNotPushed(SendQueuedNotifications::class, fn (
+            SendQueuedNotifications $job,
+        ): bool => $job->notification instanceof OrderMatchedNotification);
         DB::commit();
 
         $this->assertDatabaseCount('trades', 1);
         Queue::assertPushedTimes(BroadcastEvent::class, 1);
+        $this->assertSame(
+            2,
+            Queue::pushed(SendQueuedNotifications::class)
+                ->filter(fn (SendQueuedNotifications $job): bool => $job->notification instanceof OrderMatchedNotification)
+                ->count(),
+        );
         Queue::assertPushed(BroadcastEvent::class, function (
             BroadcastEvent $job,
         ) use ($buyer, $seller): bool {
@@ -87,7 +98,10 @@ class OrderMatchedBroadcastTest extends TestCase
                 'amount' => '0.01000000',
             ])->assertCreated();
 
-            Queue::assertNothingPushed();
+            Queue::assertNotPushed(BroadcastEvent::class);
+            Queue::assertNotPushed(SendQueuedNotifications::class, fn (
+                SendQueuedNotifications $job,
+            ): bool => $job->notification instanceof OrderMatchedNotification);
             $this->assertDatabaseCount('trades', 1);
         } finally {
             DB::rollBack();
@@ -95,6 +109,9 @@ class OrderMatchedBroadcastTest extends TestCase
 
         $this->assertDatabaseCount('trades', 0);
         Queue::assertNotPushed(BroadcastEvent::class);
+        Queue::assertNotPushed(SendQueuedNotifications::class, fn (
+            SendQueuedNotifications $job,
+        ): bool => $job->notification instanceof OrderMatchedNotification);
     }
 
     public function test_failed_matching_never_queues_order_matched(): void
@@ -127,5 +144,6 @@ class OrderMatchedBroadcastTest extends TestCase
 
         $response->assertUnprocessable();
         Queue::assertNotPushed(BroadcastEvent::class);
+        Queue::assertNotPushed(SendQueuedNotifications::class);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Actions\Trading;
 
 use App\Enums\OrderSide;
 use App\Enums\OrderStatus;
+use App\Events\OrderOpened;
 use App\Events\OrderPlaced;
 use App\Models\Order;
 use App\Models\User;
@@ -39,6 +40,7 @@ class PlaceOrder
         // Serialize the whole market mutation before acquiring user locks.
         $this->acquireMarketLock->execute($orderData->symbol);
         $lockedUser = $this->lockUser->execute($user);
+        $reservedAmount = $orderData->amount;
 
         if ($orderData->side === OrderSide::SELL) {
             $this->reserveAsset->execute(
@@ -47,17 +49,24 @@ class PlaceOrder
                 $orderData->amount,
             );
         } else {
-            $reservation = $this->calculateOrderReservation->execute(
+            $reservedAmount = $this->calculateOrderReservation->execute(
                 $orderData->price,
                 $orderData->amount,
             );
-            $this->reserveUsd->execute($lockedUser, $reservation);
+            $this->reserveUsd->execute($lockedUser, $reservedAmount);
         }
 
         $order = $this->createOrder($lockedUser, $orderData);
 
         // The synchronous listener matches before this transaction commits.
         OrderPlaced::dispatch($order);
+
+        // Only a surviving open order should receive a placement receipt.
+        $order->refresh();
+
+        if ($order->status === OrderStatus::OPEN) {
+            OrderOpened::dispatch($order, $reservedAmount);
+        }
 
         return $order;
     }
