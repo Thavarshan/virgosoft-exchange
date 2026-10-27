@@ -281,6 +281,18 @@ The buyer should finish with `35.75 USD` and `1.01000000 BTC`; the seller
 should finish with `1950.00 USD` and `0.99000000 BTC`. Both reservations should
 be cleared. These totals assume neither account has traded previously.
 
+## Transactional email
+
+Password-reset emails use Laravel's existing Fortify notification. Production
+uses Resend through Laravel Cloud's Email resource; `resend/resend-php` is a
+runtime dependency. Attach a verified sending domain to the production
+environment, choose the sender, and deploy through CI so Cloud injects
+`MAIL_MAILER=resend`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, and the encrypted
+`RESEND_API_KEY`. Custom mail variables override the injected settings.
+
+Local development defaults to `MAIL_MAILER=log`; tests do not deliver real
+email. Email verification and trading email notifications are not enabled.
+
 ## Tests and quality
 
 ```shell
